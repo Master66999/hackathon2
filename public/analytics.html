@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Analytics Hub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+      <!-- Analytics Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+        <!-- Chart 1: Member Roles -->
+        <div class="card">
+          <div class="card-title">
+            <span>Member Roles Distribution</span>
+            <i class="fa-solid fa-user-tag" style="color: var(--violet);"></i>
+          </div>
+          <div style="height: 280px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <canvas id="rolesChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Task Status -->
+        <div class="card">
+          <div class="card-title">
+            <span>Task Distribution by Status</span>
+            <i class="fa-solid fa-list-check" style="color: var(--mint);"></i>
+          </div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="tasksChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Event Categories -->
+        <div class="card">
+          <div class="card-title">
+            <span>Event Categories breakdown</span>
+            <i class="fa-solid fa-calendar-days" style="color: var(--gold);"></i>
+          </div>
+          <div style="height: 280px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <canvas id="eventsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Engagement Level vs Completed Tasks -->
+        <div class="card">
+          <div class="card-title">
+            <span>Engagement Performance Trend</span>
+            <i class="fa-solid fa-bolt" style="color: var(--violet);"></i>
+          </div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="engagementChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Fetch data from APIs
+        const [membersRes, tasksRes, eventsRes] = await Promise.all([
+          fetch('/api/members'),
+          fetch('/api/tasks'),
+          fetch('/api/events')
+        ]);
+
+        const members = await membersRes.json();
+        const tasks = await tasksRes.json();
+        const events = await eventsRes.json();
+
+        // 1. Calculate Member Roles Distribution
+        const rolesCount = { Admin: 0, Lead: 0, Organizer: 0, Member: 0 };
+        members.forEach(m => {
+          if (rolesCount[m.role] !== undefined) rolesCount[m.role]++;
+        });
+
+        // 2. Calculate Task Status Breakdown
+        const tasksCount = { pending: 0, 'in-progress': 0, completed: 0 };
+        tasks.forEach(t => {
+          if (tasksCount[t.status] !== undefined) tasksCount[t.status]++;
+        });
+
+        // 3. Calculate Event Categories Breakdown
+        const eventsCount = { Competition: 0, Workshop: 0, Meeting: 0, Social: 0 };
+        events.forEach(e => {
+          if (eventsCount[e.type] !== undefined) eventsCount[e.type]++;
+        });
+
+        // ------------------------------------
+        // Render Chart 1: Member Roles (Doughnut)
+        // ------------------------------------
+        const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+        new Chart(rolesCtx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(rolesCount),
+            datasets: [{
+              data: Object.values(rolesCount),
+              backgroundColor: ['#fbbf24', '#a855f7', '#00ffcc', 'rgba(255,255,255,0.1)'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { color: '#cbd5e0', font: { family: 'Outfit', size: 12 } }
+              }
+            },
+            cutout: '70%'
+          }
+        });
+
+        // ------------------------------------
+        // Render Chart 2: Tasks Status (Bar)
+        // ------------------------------------
+        const tasksCtx = document.getElementById('tasksChart').getContext('2d');
+        new Chart(tasksCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Pending', 'In Progress', 'Completed'],
+            datasets: [{
+              label: 'Tasks Count',
+              data: [tasksCount.pending, tasksCount['in-progress'], tasksCount.completed],
+              backgroundColor: ['#f43f5e', '#00bfff', '#00ffcc'],
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#64748b' } },
+              y: { grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748b', stepSize: 1 } }
+            }
+          }
+        });
+
+        // ------------------------------------
+        // Render Chart 3: Event Categories (Polar)
+        // ------------------------------------
+        const eventsCtx = document.getElementById('eventsChart').getContext('2d');
+        new Chart(eventsCtx, {
+          type: 'polarArea',
+          data: {
+            labels: Object.keys(eventsCount),
+            datasets: [{
+              data: Object.values(eventsCount),
+              backgroundColor: ['rgba(168, 85, 247, 0.65)', 'rgba(0, 255, 204, 0.65)', 'rgba(251, 191, 36, 0.65)', 'rgba(244, 63, 94, 0.65)'],
+              borderColor: 'transparent'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { color: '#cbd5e0', font: { family: 'Outfit', size: 12 } }
+              }
+            },
+            scales: {
+              r: {
+                grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                angleLines: { color: 'rgba(255, 255, 255, 0.04)' },
+                ticks: { display: false }
+              }
+            }
+          }
+        });
+
+        // ------------------------------------
+        // Render Chart 4: Engagement Level (Scatter / Bubble style)
+        // ------------------------------------
+        // We plot Member completedTasks vs engagementScore
+        const scatterData = members.map(m => ({ x: m.completedTasks || 0, y: m.engagementScore || 0, label: m.name }));
+        
+        const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+        new Chart(engagementCtx, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: 'Member engagement',
+              data: scatterData,
+              backgroundColor: '#a855f7',
+              pointRadius: 6,
+              pointHoverRadius: 9
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const mName = context.raw.label;
+                    return `${mName}: Tasks: ${context.raw.x}, Score: ${context.raw.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: 'Completed Tasks', color: '#64748b' },
+                grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                ticks: { color: '#64748b' }
+              },
+              y: {
+                title: { display: true, text: 'Engagement Score', color: '#64748b' },
+                grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                ticks: { color: '#64748b' }
+              }
+            }
+          }
+        });
+
+      } catch (err) {
+        console.error('Error rendering analytics charts:', err);
+      }
+    });
+  </script>
+</body>
+</html>

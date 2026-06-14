@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - AI Reports Hub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Custom terminal typing styles */
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background-color: #39ff14;
+      animation: blink 1s step-end infinite;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    .markdown-body h2 {
+      color: var(--mint);
+      border-bottom: 1px solid var(--border-glow);
+      padding-bottom: 6px;
+      margin: 18px 0 10px 0;
+      font-size: 18px;
+    }
+    .markdown-body h3 {
+      color: var(--gold);
+      margin: 14px 0 8px 0;
+      font-size: 15px;
+    }
+    .markdown-body ul {
+      padding-left: 20px;
+      margin-bottom: 10px;
+    }
+    .markdown-body li {
+      margin-bottom: 6px;
+    }
+    .markdown-body strong {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+      <!-- Buttons Panel -->
+      <div class="card" style="margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px;">
+        <button class="btn btn-mint" onclick="generateReport('summary')">
+          <i class="fa-solid fa-file-invoice"></i> Generate Club Report
+        </button>
+        <button class="btn btn-primary" onclick="generateReport('predict')">
+          <i class="fa-solid fa-chart-line"></i> Predict Future Growth
+        </button>
+        <button class="btn btn-secondary" onclick="generateReport('schedule')" style="border-color: var(--gold-glow); color: var(--gold);">
+          <i class="fa-solid fa-clock"></i> Auto-Schedule Tasks
+        </button>
+      </div>
+
+      <!-- AI Console output -->
+      <div class="card">
+        <div class="card-title">
+          <span>AI Cognitive Terminal Feed</span>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+            channel: secure-llm-link
+          </div>
+        </div>
+        <div class="ai-terminal" id="terminal-screen">
+          <div class="ai-terminal-prompt">guest@clubpulse:~# click an action above to initialize AI computation stream...</div>
+          <div id="terminal-content" class="markdown-body"></div>
+          <span id="cursor" class="terminal-cursor" style="display: none;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/layout.js"></script>
+  <script>
+    let typingInterval = null;
+
+    // A helper to format simple markdown strings into HTML tags
+    function formatMarkdown(text) {
+      if (!text) return '';
+      let formatted = text
+        // Headings
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        // Bold
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Bullet lists
+        .replace(/^\- (.*$)/gim, '<li>$1</li>');
+
+      // Wrap consecutive <li> elements in a <ul> tag
+      // To do this simply, we look for groups of <li> and wrap them
+      formatted = formatted.replace(/(<li>.*<\/li>)/gs, (match) => {
+        return `<ul>${match}</ul>`;
+      });
+
+      return formatted;
+    }
+
+    // Typewriter effect simulation
+    function typeEffect(element, htmlContent, onComplete) {
+      clearInterval(typingInterval);
+      const cursor = document.getElementById('cursor');
+      cursor.style.display = 'inline-block';
+      element.innerHTML = '';
+      
+      // We type word-by-word or tag-by-tag. To keep HTML intact, we can parse it into elements or simple text chunks.
+      // A simple implementation: type character by character but parse tags at once
+      let i = 0;
+      let currentHTML = '';
+      
+      typingInterval = setInterval(() => {
+        if (i < htmlContent.length) {
+          if (htmlContent[i] === '<') {
+            // Read until closing tag
+            const endIdx = htmlContent.indexOf('>', i);
+            if (endIdx !== -1) {
+              currentHTML += htmlContent.substring(i, endIdx + 1);
+              i = endIdx + 1;
+            } else {
+              currentHTML += htmlContent[i];
+              i++;
+            }
+          } else {
+            currentHTML += htmlContent[i];
+            i++;
+          }
+          element.innerHTML = currentHTML;
+          // Auto scroll terminal
+          const term = document.getElementById('terminal-screen');
+          term.scrollTop = term.scrollHeight;
+        } else {
+          clearInterval(typingInterval);
+          cursor.style.display = 'none';
+          if (onComplete) onComplete();
+        }
+      }, 5); // Speed multiplier
+    }
+
+    async function generateReport(type) {
+      const termContent = document.getElementById('terminal-content');
+      const cursor = document.getElementById('cursor');
+      
+      // Reset terminal screen
+      termContent.innerHTML = '';
+      cursor.style.display = 'inline-block';
+      
+      let endpoint = '';
+      let promptText = '';
+
+      if (type === 'summary') {
+        endpoint = '/api/ai/generate-report';
+        promptText = 'guest@clubpulse:~# curl -X POST /api/ai/generate-report\nConnecting to cognitive node...\nExtracting club members database metadata...\nCompiling statistics summary...';
+      } else if (type === 'predict') {
+        endpoint = '/api/ai/predict';
+        promptText = 'guest@clubpulse:~# curl -X POST /api/ai/predict\nParsing historical event attendance records...\nSynthesizing regression curve forecasting coefficients...\nCalculating team completion velocities...';
+      } else if (type === 'schedule') {
+        endpoint = '/api/ai/auto-schedule';
+        promptText = 'guest@clubpulse:~# curl -X POST /api/ai/auto-schedule\nScanning pending task registry list...\nFetching list of active developer accounts...\nBalancing developer workloads...';
+      }
+
+      document.querySelector('#terminal-screen .ai-terminal-prompt').textContent = promptText;
+
+      try {
+        const res = await fetch(endpoint, { method: 'POST' });
+        const data = await res.json();
+        
+        const rawReport = data.report || data.prediction;
+        const htmlReport = formatMarkdown(rawReport);
+
+        typeEffect(termContent, htmlReport);
+      } catch (err) {
+        cursor.style.display = 'none';
+        termContent.innerHTML = `<span style="color: var(--rose);">[ERROR] System was unable to process LLM request. Verify backend connection is active.</span>`;
+      }
+    }
+  </script>
+</body>
+</html>

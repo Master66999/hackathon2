@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Dashboard Overview</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="card metric-card metric-mint">
+          <div class="metric-info">
+            <h4>Total Members</h4>
+            <div class="value" id="stat-members">0</div>
+          </div>
+          <div class="metric-icon">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+
+        <div class="card metric-card metric-violet">
+          <div class="metric-info">
+            <h4>Total Participants</h4>
+            <div class="value" id="stat-participants">0</div>
+          </div>
+          <div class="metric-icon">
+            <i class="fa-solid fa-people-group"></i>
+          </div>
+        </div>
+
+        <div class="card metric-card metric-gold">
+          <div class="metric-info">
+            <h4>Task Completion %</h4>
+            <div class="value" id="stat-tasks">0%</div>
+          </div>
+          <div class="metric-icon">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+        </div>
+
+        <div class="card metric-card metric-violet">
+          <div class="metric-info">
+            <h4>Attendance Rate</h4>
+            <div class="value" id="stat-attendance">0%</div>
+          </div>
+          <div class="metric-icon">
+            <i class="fa-solid fa-clipboard-user"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Visualizations & Leaderboard -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;">
+        <div class="card" style="grid-column: span 2;">
+          <div class="card-title">
+            <span>Monthly Event Attendance</span>
+            <i class="fa-solid fa-chart-line" style="color: var(--mint);"></i>
+          </div>
+          <div style="height: 300px; position: relative;">
+            <canvas id="attendanceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Club Performance Metrics</span>
+            <i class="fa-solid fa-chart-pie" style="color: var(--violet);"></i>
+          </div>
+          <div style="height: 300px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <canvas id="performanceChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+        <!-- Top 5 Leaderboard -->
+        <div class="card">
+          <div class="card-title">
+            <span>Top Members Leaderboard</span>
+            <a href="members.html" style="font-size: 12px; color: var(--violet); font-weight: 600;">View All <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <div class="leaderboard-list" id="leaderboard-list">
+            <!-- Dynamic items -->
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="card">
+          <div class="card-title">
+            <span>Upcoming Club Events</span>
+            <a href="events.html" style="font-size: 12px; color: var(--mint); font-weight: 600;">View All <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 16px;" id="upcoming-events-list">
+            <!-- Dynamic events -->
+          </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="card">
+          <div class="card-title">
+            <span>System Activity Log</span>
+            <i class="fa-solid fa-clock-rotate-left" style="color: var(--gold);"></i>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: var(--text-secondary);" id="activity-log">
+            <div style="display: flex; gap: 10px; border-left: 2px solid var(--mint); padding-left: 10px; margin-bottom: 2px;">
+              <div>
+                <strong style="color: var(--text-primary);">PulseHack 2026</strong> registration open for public team signups.
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Just now</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; border-left: 2px solid var(--violet); padding-left: 10px; margin-bottom: 2px;">
+              <div>
+                <strong style="color: var(--text-primary);">Alex Rivera</strong> updated the glassmorphic styling design assets.
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">10 minutes ago</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; border-left: 2px solid var(--gold); padding-left: 10px; margin-bottom: 2px;">
+              <div>
+                <strong style="color: var(--text-primary);">Team CyberNeura</strong> graded with performance score of 92/100.
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">1 hour ago</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; border-left: 2px solid var(--text-muted); padding-left: 10px;">
+              <div>
+                Database loaded and seeded default simulation profiles.
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">3 hours ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Fetch Dashboard Stats
+      fetch('/api/stats')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('stat-members').textContent = data.totalMembers;
+          document.getElementById('stat-participants').textContent = data.totalParticipants;
+          document.getElementById('stat-tasks').textContent = data.taskCompletionRate + '%';
+          document.getElementById('stat-attendance').textContent = data.attendanceRate + '%';
+
+          // Render Upcoming Events List
+          const eventsContainer = document.getElementById('upcoming-events-list');
+          eventsContainer.innerHTML = '';
+          if (data.upcomingEvents && data.upcomingEvents.length > 0) {
+            data.upcomingEvents.forEach(event => {
+              const dateObj = new Date(event.date);
+              const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+              
+              eventsContainer.innerHTML += `
+                <div style="padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <h5 style="margin-bottom: 4px; font-weight: 600;">${event.title}</h5>
+                    <span style="font-size: 11px; color: var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${event.location}</span>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--mint);">${formattedDate}</div>
+                    <span class="badge badge-upcoming" style="padding: 2px 6px; font-size: 8px; margin-top: 4px;">${event.type}</span>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            eventsContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">No upcoming events</div>`;
+          }
+        })
+        .catch(err => console.error('Error fetching stats:', err));
+
+      // 2. Fetch Leaderboard
+      fetch('/api/members/leaderboard')
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById('leaderboard-list');
+          list.innerHTML = '';
+          const top5 = data.slice(0, 5);
+          if (top5.length > 0) {
+            top5.forEach((member, index) => {
+              const initials = member.name.split(' ').map(n => n[0]).join('');
+              list.innerHTML += `
+                <div class="leaderboard-item rank-${index + 1}">
+                  <div class="leaderboard-rank">${index + 1}</div>
+                  <div class="leaderboard-member">
+                    <div class="member-avatar">${initials}</div>
+                    <div class="member-details">
+                      <h5>${member.name}</h5>
+                      <span>${member.role}</span>
+                    </div>
+                  </div>
+                  <div class="leaderboard-score">
+                    <div class="score-value">${member.engagementScore}</div>
+                    <div class="score-label">Points</div>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">No members yet</div>`;
+          }
+        })
+        .catch(err => console.error('Error fetching leaderboard:', err));
+
+      // 3. Fetch & Render Monthly Attendance Chart
+      fetch('/api/events/stats/monthly-attendance')
+        .then(res => res.json())
+        .then(data => {
+          const months = Object.keys(data);
+          const counts = Object.values(data);
+          
+          const ctx = document.getElementById('attendanceChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: months,
+              datasets: [{
+                label: 'Event Attendance',
+                data: counts,
+                borderColor: '#00ffcc',
+                backgroundColor: 'rgba(0, 255, 204, 0.05)',
+                borderWidth: 3,
+                tension: 0.35,
+                fill: true,
+                pointBackgroundColor: '#00ffcc',
+                pointHoverRadius: 8
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                x: {
+                  grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                  ticks: { color: '#64748b' }
+                },
+                y: {
+                  grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                  ticks: { color: '#64748b', stepSize: 20 },
+                  beginAtZero: true
+                }
+              }
+            }
+          });
+        })
+        .catch(err => console.error('Error loading line chart:', err));
+
+      // 4. Render Club Performance Doughnut Chart (static breakdown for visuals)
+      const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+      new Chart(performanceCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed Tasks', 'Pending Tasks', 'Attendance Rate', 'Engagement Target'],
+          datasets: [{
+            data: [45, 15, 25, 15],
+            backgroundColor: ['#a855f7', '#f43f5e', '#00ffcc', '#fbbf24'],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#cbd5e0',
+                padding: 15,
+                font: { family: 'Outfit', size: 11 }
+              }
+            }
+          },
+          cutout: '75%'
+        }
+      });
+    });
+  </script>
+</body>
+</html>

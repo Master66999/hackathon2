@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Event Self Check-in</title>
+  <meta name="description" content="Self check-in for ClubPulse events. Enter your Team ID and Event ID to record your attendance.">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .checkin-success {
+      display: none;
+      text-align: center;
+      padding: 32px;
+      background: rgba(0, 255, 204, 0.05);
+      border: 1px solid var(--mint-glow);
+      border-radius: 16px;
+      margin-top: 24px;
+    }
+    .checkin-success.active { display: block; }
+
+    .checkin-error {
+      display: none;
+      padding: 16px 20px;
+      background: rgba(244, 63, 94, 0.07);
+      border: 1px solid rgba(244, 63, 94, 0.25);
+      border-radius: 10px;
+      color: var(--rose);
+      font-size: 14px;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    .checkin-error.active { display: block; }
+
+    .divider-text {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 20px 0;
+      position: relative;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .divider-text::before,
+    .divider-text::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 38%;
+      height: 1px;
+      background: var(--border-color);
+    }
+    .divider-text::before { left: 0; }
+    .divider-text::after { right: 0; }
+
+    .tab-button {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+    }
+    .tab-button.active {
+      background: rgba(168, 85, 247, 0.1);
+      border-color: var(--violet-glow);
+      color: var(--violet);
+    }
+  </style>
+</head>
+<body style="background: var(--bg-main);">
+  <div class="public-container">
+    <div class="public-box">
+      <!-- Header -->
+      <div class="public-logo">
+        <i class="fa-solid fa-bolt-lightning" style="margin-right: 8px;"></i> ClubPulse
+      </div>
+      <p style="text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 30px;">
+        Self Check-in Portal — Record your event attendance by entering your team details or pasting your QR ticket data below.
+      </p>
+
+      <!-- Tab Switcher -->
+      <div style="display: flex; gap: 10px; margin-bottom: 24px;">
+        <button class="tab-button active" id="tab-ids" onclick="switchTab('ids')">
+          <i class="fa-solid fa-id-card"></i> Enter IDs Manually
+        </button>
+        <button class="tab-button" id="tab-qr" onclick="switchTab('qr')">
+          <i class="fa-solid fa-qrcode"></i> Paste QR Ticket Data
+        </button>
+      </div>
+
+      <div class="card">
+        <!-- Tab 1: Manual IDs -->
+        <div id="panel-ids">
+          <form id="checkin-form" onsubmit="submitCheckin(event)">
+            <div class="form-group">
+              <label for="manual-event">Select Event</label>
+              <select id="manual-event" class="form-control" required>
+                <option value="">Loading events...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="manual-team-id">Your Team ID</label>
+              <input type="text" id="manual-team-id" class="form-control" placeholder="Paste your 24-character Team ObjectId here" required
+                style="font-family: var(--font-mono); letter-spacing: 0.5px; font-size: 13px;">
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                Your Team ID was included in your registration confirmation email and QR ticket JSON.
+              </div>
+            </div>
+            <button type="submit" class="btn btn-mint" id="checkin-btn" style="width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 8px;">
+              <i class="fa-solid fa-clipboard-user"></i> Check In Now
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab 2: Paste QR JSON -->
+        <div id="panel-qr" style="display: none;">
+          <div class="form-group">
+            <label for="qr-paste">Paste QR Ticket JSON Data</label>
+            <textarea id="qr-paste" class="form-control" rows="6" 
+              placeholder='{"teamId":"...","eventId":"...","teamName":"...","eventName":"..."}'
+              style="font-family: var(--font-mono); font-size: 12px; line-height: 1.6;"></textarea>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+              Copy the JSON from your QR ticket (scan with any QR app and paste the text content here).
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="qr-checkin-btn" onclick="submitQRCheckin()" style="width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 8px;">
+            <i class="fa-solid fa-check-double"></i> Verify & Check In
+          </button>
+        </div>
+
+        <!-- Error Banner -->
+        <div class="checkin-error" id="checkin-error">
+          <i class="fa-solid fa-circle-xmark"></i> <span id="error-msg">Check-in failed. Please verify your Team ID and Event ID.</span>
+        </div>
+      </div>
+
+      <!-- Success Banner -->
+      <div class="checkin-success" id="success-box">
+        <div style="font-size: 52px; margin-bottom: 12px;">✅</div>
+        <h3 style="color: var(--mint); font-size: 24px; margin-bottom: 10px;">Check-in Successful!</h3>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+          Your team's attendance for this event has been recorded in the ClubPulse system.
+        </p>
+        <div id="checkin-details-box" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; text-align: left; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+          <div><span style="color: var(--text-secondary);">Team ID:</span> <span id="detail-tid" style="font-family: var(--font-mono); color: var(--text-muted); font-size: 11px;"></span></div>
+          <div><span style="color: var(--text-secondary);">Event:</span> <strong id="detail-ename" style="color: var(--text-primary);">-</strong></div>
+          <div><span style="color: var(--text-secondary);">Timestamp:</span> <span id="detail-ts" style="font-family: var(--font-mono); color: var(--mint);"></span></div>
+        </div>
+        <a href="attend.html" class="btn btn-secondary" style="margin-top: 20px; display: inline-flex;">
+          <i class="fa-solid fa-rotate-left"></i> Check-in Another Team
+        </a>
+      </div>
+
+      <!-- Nav Links -->
+      <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted);">
+        <a href="register.html" style="color: var(--violet); font-weight: 600;">← Team Registration</a>
+        &nbsp;|&nbsp;
+        <a href="index.html" style="color: var(--mint); font-weight: 600;">Dashboard →</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    document.head.appendChild(link);
+  </script>
+  <script>
+    let allEvents = [];
+
+    function switchTab(tab) {
+      const isIds = tab === 'ids';
+      document.getElementById('tab-ids').classList.toggle('active', isIds);
+      document.getElementById('tab-qr').classList.toggle('active', !isIds);
+      document.getElementById('panel-ids').style.display = isIds ? 'block' : 'none';
+      document.getElementById('panel-qr').style.display = isIds ? 'none' : 'block';
+      hideError();
+    }
+
+    function hideError() {
+      document.getElementById('checkin-error').classList.remove('active');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('checkin-error');
+      document.getElementById('error-msg').textContent = msg;
+      el.classList.add('active');
+    }
+
+    function showSuccess(teamId, eventName) {
+      document.getElementById('success-box').classList.add('active');
+      document.getElementById('success-box').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('detail-tid').textContent = teamId;
+      document.getElementById('detail-ename').textContent = eventName;
+      document.getElementById('detail-ts').textContent = new Date().toLocaleString();
+    }
+
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        allEvents = await res.json();
+        const sel = document.getElementById('manual-event');
+        sel.innerHTML = '<option value="">— Select an Event —</option>';
+        allEvents.forEach(e => {
+          const date = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          sel.innerHTML += `<option value="${e._id}">${e.title} (${date})</option>`;
+        });
+      } catch (err) {
+        document.getElementById('manual-event').innerHTML = '<option value="">Error loading events</option>';
+      }
+    }
+
+    async function performCheckin(teamId, eventId, eventName) {
+      try {
+        const res = await fetch(`/api/teams/${teamId}/attend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Check-in failed. Please verify your information.');
+          return false;
+        }
+
+        showSuccess(teamId, eventName);
+        return true;
+      } catch (err) {
+        showError('Network error. Please ensure the server is running.');
+        return false;
+      }
+    }
+
+    async function submitCheckin(e) {
+      e.preventDefault();
+      hideError();
+
+      const btn = document.getElementById('checkin-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking In...';
+
+      const teamId = document.getElementById('manual-team-id').value.trim();
+      const eventId = document.getElementById('manual-event').value;
+
+      const eventObj = allEvents.find(ev => ev._id === eventId);
+      const eventName = eventObj ? eventObj.title : eventId;
+
+      const success = await performCheckin(teamId, eventId, eventName);
+
+      if (!success) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-clipboard-user"></i> Check In Now';
+      }
+    }
+
+    async function submitQRCheckin() {
+      hideError();
+
+      const rawText = document.getElementById('qr-paste').value.trim();
+      if (!rawText) {
+        showError('Please paste your QR ticket JSON data in the text area.');
+        return;
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(rawText);
+      } catch {
+        showError('Invalid QR data format. Expected a JSON object. Please re-scan or copy the raw QR code text.');
+        return;
+      }
+
+      if (!payload.teamId || !payload.eventId) {
+        showError('Malformed QR ticket. teamId and eventId fields are required.');
+        return;
+      }
+
+      const btn = document.getElementById('qr-checkin-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+
+      const eventName = payload.eventName || payload.eventId;
+      const success = await performCheckin(payload.teamId, payload.eventId, eventName);
+
+      if (!success) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Verify & Check In';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadEvents);
+  </script>
+</body>
+</html>

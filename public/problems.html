@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Problem Statements</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+
+      <!-- Toolbar -->
+      <div class="filters-bar">
+        <div class="filter-pills">
+          <button class="filter-pill active" onclick="filterProblems('all')" id="pill-all">All Problems</button>
+          <button class="filter-pill" onclick="filterProblems('AI/ML')" id="pill-aiml">AI / ML</button>
+          <button class="filter-pill" onclick="filterProblems('Web Dev')" id="pill-webdev">Web Dev</button>
+          <button class="filter-pill" onclick="filterProblems('Web3')" id="pill-web3">Web3</button>
+          <button class="filter-pill" onclick="filterProblems('App Dev')" id="pill-appdev">App Dev</button>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-secondary" onclick="openRandomAllocateModal()" style="border-color: var(--gold-glow); color: var(--gold);">
+            <i class="fa-solid fa-shuffle"></i> Allocate Randomly
+          </button>
+          <button class="btn btn-mint" onclick="openProblemModal()">
+            <i class="fa-solid fa-plus"></i> Add Problem
+          </button>
+        </div>
+      </div>
+
+      <!-- Problems Grid -->
+      <div class="events-grid" id="problems-grid">
+        <!-- Dynamically loaded cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Problem Modal -->
+  <div class="modal-overlay" id="problem-modal">
+    <div class="modal-container" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 id="problem-modal-title">Add Problem Statement</h3>
+        <i class="fa-solid fa-xmark modal-close" onclick="closeProblemModal()"></i>
+      </div>
+      <form id="problem-form" onsubmit="saveProblem(event)">
+        <input type="hidden" id="problem-id">
+        <div class="modal-body" style="max-height: 420px; overflow-y: auto;">
+          <div class="form-group">
+            <label for="problem-title">Problem Statement Title</label>
+            <input type="text" id="problem-title" class="form-control" placeholder="e.g. Smart Energy Grid Optimizer" required>
+          </div>
+          <div class="form-group">
+            <label for="problem-desc">Description</label>
+            <textarea id="problem-desc" class="form-control" rows="4" placeholder="Detailed problem definition..." required></textarea>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label for="problem-category">Category</label>
+              <select id="problem-category" class="form-control" required>
+                <option value="AI/ML">AI / ML</option>
+                <option value="Web Dev">Web Dev</option>
+                <option value="Web3">Web3</option>
+                <option value="App Dev">App Dev</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="problem-event">Associated Event</label>
+              <select id="problem-event" class="form-control" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeProblemModal()">Cancel</button>
+          <button type="submit" class="btn btn-mint">Save Problem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manual Allocate Modal -->
+  <div class="modal-overlay" id="allocate-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Manually Assign to Team</h3>
+        <i class="fa-solid fa-xmark modal-close" onclick="closeAllocateModal()"></i>
+      </div>
+      <form id="allocate-form" onsubmit="saveManualAllocate(event)">
+        <input type="hidden" id="allocate-problem-id">
+        <div class="modal-body">
+          <p id="allocate-problem-info" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; border-left: 2px solid var(--violet); padding-left: 12px;">
+            Select a registered team to assign this problem statement to.
+          </p>
+          <div class="form-group">
+            <label for="allocate-team">Select Team</label>
+            <select id="allocate-team" class="form-control" required>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeAllocateModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Assign Problem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Random Allocate Modal -->
+  <div class="modal-overlay" id="random-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Random Allocation</h3>
+        <i class="fa-solid fa-xmark modal-close" onclick="closeRandomModal()"></i>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+          This will automatically assign all unallocated problem statements to registered teams (with no current assignment) for the chosen event.
+        </p>
+        <div class="form-group">
+          <label for="random-event">Select Event</label>
+          <select id="random-event" class="form-control" required>
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeRandomModal()">Cancel</button>
+        <button class="btn btn-gold" onclick="runRandomAllocate()" style="background: linear-gradient(135deg, var(--gold), #d97706); color: #090a0f; font-weight: 700;">
+          <i class="fa-solid fa-shuffle"></i> Run Random Allocate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/layout.js"></script>
+  <script>
+    let allProblems = [];
+    let allEvents = [];
+    let allTeams = [];
+    let currentFilter = 'all';
+
+    const categoryColors = {
+      'AI/ML': 'var(--mint)',
+      'Web Dev': 'var(--violet)',
+      'Web3': 'var(--gold)',
+      'App Dev': '#00bfff'
+    };
+
+    async function loadData() {
+      try {
+        const [problemsRes, eventsRes, teamsRes] = await Promise.all([
+          fetch('/api/problems'),
+          fetch('/api/events'),
+          fetch('/api/teams')
+        ]);
+        allProblems = await problemsRes.json();
+        allEvents = await eventsRes.json();
+        allTeams = await teamsRes.json();
+        renderProblems();
+      } catch (err) {
+        console.error('Error loading data:', err);
+      }
+    }
+
+    function renderProblems() {
+      const grid = document.getElementById('problems-grid');
+      grid.innerHTML = '';
+
+      const filtered = allProblems.filter(p => {
+        if (currentFilter === 'all') return true;
+        return p.category === currentFilter;
+      });
+
+      if (filtered.length > 0) {
+        filtered.forEach(problem => {
+          const color = categoryColors[problem.category] || 'var(--text-secondary)';
+          const eventName = problem.eventId ? problem.eventId.title : 'N/A';
+          const teamName = problem.allocatedToTeam ? (problem.allocatedToTeam.name || 'Allocated') : null;
+          const isAllocated = !!problem.allocatedToTeam;
+
+          grid.innerHTML += `
+            <div class="card event-card" id="problem-${problem._id}">
+              <div class="event-meta">
+                <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid ${color}; color: ${color};">${problem.category}</span>
+                ${isAllocated
+                  ? `<span class="badge badge-completed" style="font-size: 9px;">ALLOCATED</span>`
+                  : `<span class="badge badge-pending" style="font-size: 9px;">UNASSIGNED</span>`
+                }
+              </div>
+              <h4 style="font-size: 16px; font-weight: 700; margin: 12px 0 10px 0;">${problem.title}</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; flex: 1; margin-bottom: 16px;">${problem.description}</p>
+
+              <div class="event-info-row">
+                <i class="fa-solid fa-calendar-days" style="color: var(--violet);"></i>
+                <span>Event: ${eventName}</span>
+              </div>
+              <div class="event-info-row" style="margin-bottom: 16px;">
+                <i class="fa-solid fa-shield-halved" style="color: ${color};"></i>
+                <span>${teamName ? `Assigned to: <strong>${teamName}</strong>` : 'Not yet assigned to any team'}</span>
+              </div>
+
+              <div class="event-actions">
+                ${!isAllocated
+                  ? `<button class="btn btn-secondary btn-sm" style="flex: 1; border-color: var(--violet-glow); color: var(--violet);" onclick="openAllocateModal('${problem._id}', '${problem.title}')">
+                      <i class="fa-solid fa-link"></i> Assign
+                    </button>`
+                  : `<button class="btn btn-secondary btn-sm" style="flex: 1; border-color: rgba(244,63,94,0.2); color: var(--rose);" onclick="deallocateProblem('${problem._id}')">
+                      <i class="fa-solid fa-link-slash"></i> Unassign
+                    </button>`
+                }
+                <button class="btn btn-secondary btn-sm" onclick="editProblem('${problem._id}')">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProblem('${problem._id}')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No problem statements found for this category.</div>`;
+      }
+    }
+
+    function filterProblems(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      const pillId = 'pill-' + filter.toLowerCase().replace('/', '').replace(' ', '');
+      const activePill = document.getElementById(pillId) || document.getElementById('pill-all');
+      if (activePill) activePill.classList.add('active');
+      renderProblems();
+    }
+
+    // Problem Modal
+    function populateEventSelects() {
+      ['problem-event', 'random-event'].forEach(selectId => {
+        const sel = document.getElementById(selectId);
+        if (sel) {
+          sel.innerHTML = '';
+          allEvents.forEach(e => {
+            sel.innerHTML += `<option value="${e._id}">${e.title}</option>`;
+          });
+        }
+      });
+    }
+
+    function openProblemModal(problem = null) {
+      populateEventSelects();
+      const title = document.getElementById('problem-modal-title');
+      if (problem) {
+        title.textContent = 'Edit Problem Statement';
+        document.getElementById('problem-id').value = problem._id;
+        document.getElementById('problem-title').value = problem.title;
+        document.getElementById('problem-desc').value = problem.description;
+        document.getElementById('problem-category').value = problem.category;
+        if (problem.eventId) document.getElementById('problem-event').value = problem.eventId._id || problem.eventId;
+      } else {
+        title.textContent = 'Add Problem Statement';
+        document.getElementById('problem-form').reset();
+        document.getElementById('problem-id').value = '';
+      }
+      document.getElementById('problem-modal').classList.add('active');
+    }
+
+    function closeProblemModal() {
+      document.getElementById('problem-modal').classList.remove('active');
+    }
+
+    function editProblem(id) {
+      const p = allProblems.find(x => x._id === id);
+      if (p) openProblemModal(p);
+    }
+
+    async function saveProblem(e) {
+      e.preventDefault();
+      const id = document.getElementById('problem-id').value;
+      const payload = {
+        title: document.getElementById('problem-title').value,
+        description: document.getElementById('problem-desc').value,
+        category: document.getElementById('problem-category').value,
+        eventId: document.getElementById('problem-event').value
+      };
+      const url = id ? `/api/problems/${id}` : '/api/problems';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          closeProblemModal();
+          loadData();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Failed to save problem.');
+        }
+      } catch (err) {
+        console.error('Error saving problem:', err);
+      }
+    }
+
+    async function deleteProblem(id) {
+      if (!confirm('Delete this problem statement?')) return;
+      try {
+        const res = await fetch(`/api/problems/${id}`, { method: 'DELETE' });
+        if (res.ok) loadData();
+        else alert('Failed to delete.');
+      } catch (err) {
+        console.error('Error deleting problem:', err);
+      }
+    }
+
+    // Manual Allocate Modal
+    function openAllocateModal(problemId, problemTitle) {
+      document.getElementById('allocate-problem-id').value = problemId;
+      document.getElementById('allocate-problem-info').innerHTML = `Assigning: <strong style="color: var(--text-primary);">${problemTitle}</strong>`;
+
+      const teamSel = document.getElementById('allocate-team');
+      teamSel.innerHTML = '';
+      const unassignedTeams = allTeams.filter(t => !t.problemStatement || t.problemStatement === '');
+      if (unassignedTeams.length > 0) {
+        unassignedTeams.forEach(t => {
+          teamSel.innerHTML += `<option value="${t._id}">${t.name} (Leader: ${t.leaderName})</option>`;
+        });
+      } else {
+        // Show all if none unassigned
+        allTeams.forEach(t => {
+          teamSel.innerHTML += `<option value="${t._id}">${t.name} (Leader: ${t.leaderName})</option>`;
+        });
+      }
+
+      document.getElementById('allocate-modal').classList.add('active');
+    }
+
+    function closeAllocateModal() {
+      document.getElementById('allocate-modal').classList.remove('active');
+    }
+
+    async function saveManualAllocate(e) {
+      e.preventDefault();
+      const problemId = document.getElementById('allocate-problem-id').value;
+      const teamId = document.getElementById('allocate-team').value;
+
+      try {
+        const res = await fetch('/api/problems/allocate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId, teamId })
+        });
+        if (res.ok) {
+          closeAllocateModal();
+          loadData();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Allocation failed.');
+        }
+      } catch (err) {
+        console.error('Error allocating:', err);
+      }
+    }
+
+    async function deallocateProblem(problemId) {
+      if (!confirm('Remove this team assignment?')) return;
+      try {
+        const res = await fetch('/api/problems/deallocate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId })
+        });
+        if (res.ok) loadData();
+        else alert('Deallocation failed.');
+      } catch (err) {
+        console.error('Error deallocating:', err);
+      }
+    }
+
+    // Random Allocate Modal
+    function openRandomAllocateModal() {
+      populateEventSelects();
+      document.getElementById('random-modal').classList.add('active');
+    }
+
+    function closeRandomModal() {
+      document.getElementById('random-modal').classList.remove('active');
+    }
+
+    async function runRandomAllocate() {
+      const eventId = document.getElementById('random-event').value;
+      if (!eventId) { alert('Select an event first.'); return; }
+
+      try {
+        const res = await fetch('/api/problems/allocate-random', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          closeRandomModal();
+          loadData();
+        } else {
+          alert(data.error || 'Random allocation failed.');
+        }
+      } catch (err) {
+        console.error('Error running random allocation:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

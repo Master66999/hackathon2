@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Teams & Participants</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+      <!-- Info Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <p style="font-size: 14px; color: var(--text-secondary); max-width: 600px;">
+          View registered hackathon and competition teams. Perform evaluations, award grades, and record attendance check-ins directly.
+        </p>
+        <a href="register.html" class="btn btn-mint btn-sm" target="_blank">
+          <i class="fa-solid fa-square-plus"></i> Open Public Registration Portal
+        </a>
+      </div>
+
+      <!-- Teams Grid -->
+      <div class="events-grid" id="teams-grid">
+        <!-- Dynamically loaded team cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Grading Modal -->
+  <div class="modal-overlay" id="grade-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Evaluate Team Performance</h3>
+        <i class="fa-solid fa-xmark modal-close" onclick="closeGradeModal()"></i>
+      </div>
+      <form id="grade-form" onsubmit="saveGrade(event)">
+        <input type="hidden" id="grade-team-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="performance-grade">Performance Score (0 - 100)</label>
+            <input type="number" id="performance-grade" class="form-control" min="0" max="100" placeholder="e.g. 92" required>
+          </div>
+          <div class="form-group">
+            <label for="performance-feedback">Feedback & Comments</label>
+            <textarea id="performance-feedback" class="form-control" rows="4" placeholder="Enter evaluation summary details..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeGradeModal()">Cancel</button>
+          <button type="submit" class="btn btn-mint">Submit Grade</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Team Check-in Modal -->
+  <div class="modal-overlay" id="checkin-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Team Attendance Check-in</h3>
+        <i class="fa-solid fa-xmark modal-close" onclick="closeCheckinModal()"></i>
+      </div>
+      <form id="checkin-form" onsubmit="saveCheckin(event)">
+        <input type="hidden" id="checkin-team-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="checkin-event">Select Event</label>
+            <select id="checkin-event" class="form-control" required>
+              <!-- Populated dynamically with events -->
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeCheckinModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Check-in Team</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/layout.js"></script>
+  <script>
+    let allTeams = [];
+    let allEvents = [];
+
+    async function loadInitialData() {
+      try {
+        const eventsRes = await fetch('/api/events');
+        allEvents = await eventsRes.json();
+
+        const teamsRes = await fetch('/api/teams');
+        allTeams = await teamsRes.json();
+        
+        renderTeams();
+      } catch (err) {
+        console.error('Error loading initial data:', err);
+      }
+    }
+
+    function renderTeams() {
+      const grid = document.getElementById('teams-grid');
+      grid.innerHTML = '';
+
+      if (allTeams.length > 0) {
+        allTeams.forEach(team => {
+          const eventName = team.registeredEvent ? team.registeredEvent.title : 'Unknown Event';
+          const problemText = team.problemStatement 
+            ? `<span style="color: var(--mint); font-weight: 600;">${team.problemStatement}</span>`
+            : '<span style="color: var(--text-muted); font-style: italic;">No problem statement allocated</span>';
+
+          const hasGrade = team.performanceGrade > 0;
+          const gradeText = hasGrade 
+            ? `<span style="color: var(--gold); font-weight: 800; font-size: 16px;">${team.performanceGrade}/100</span>` 
+            : '<span style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">UNGRADED</span>';
+
+          const attendedCount = team.attendedEvents ? team.attendedEvents.length : 0;
+
+          grid.innerHTML += `
+            <div class="card event-card" id="team-${team._id}">
+              <div class="event-meta">
+                <span class="badge badge-completed" style="text-transform: none; font-size: 10px;">${eventName}</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 11px; color: var(--text-muted);">Grade:</span>
+                  ${gradeText}
+                </div>
+              </div>
+              <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--violet); font-size: 14px;"></i> ${team.name}
+              </h4>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                Leader: <strong>${team.leaderName}</strong> (${team.leaderEmail})
+              </div>
+              
+              <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px;">Members (${team.members ? team.members.length : 0})</div>
+                <ul style="list-style: none; font-size: 12px; color: var(--text-primary); display: flex; flex-direction: column; gap: 4px;">
+                  ${team.members && team.members.length > 0 
+                    ? team.members.map(m => `<li><i class="fa-regular fa-user" style="margin-right: 6px; font-size: 10px; color: var(--violet);"></i> ${m.name} (${m.email})</li>`).join('')
+                    : '<li style="color: var(--text-muted); font-style: italic;">No additional team members listed.</li>'
+                  }
+                </ul>
+              </div>
+
+              <div style="font-size: 13px; margin-bottom: 8px;">
+                <span style="color: var(--text-secondary);">Topic:</span> ${problemText}
+              </div>
+              
+              <div style="font-size: 13px; margin-bottom: 16px;">
+                <span style="color: var(--text-secondary);">Check-ins:</span> 
+                <span class="badge badge-active" style="font-family: var(--font-mono); font-size: 10px; padding: 2px 6px;">${attendedCount} Events Attended</span>
+              </div>
+
+              ${team.performanceFeedback 
+                ? `<div style="font-size: 11px; color: var(--text-muted); background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 6px; margin-bottom: 16px; border-left: 2px solid var(--gold); font-style: italic;">"${team.performanceFeedback}"</div>`
+                : ''
+              }
+
+              <div class="event-actions">
+                <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="openCheckinModal('${team._id}', '${team.registeredEvent ? team.registeredEvent._id : ''}')">
+                  <i class="fa-solid fa-clipboard-user"></i> Check-in
+                </button>
+                <button class="btn btn-mint btn-sm" style="flex: 1;" onclick="openGradeModal('${team._id}', ${team.performanceGrade || 0}, '${team.performanceFeedback || ''}')">
+                  <i class="fa-solid fa-square-poll-vertical"></i> Evaluate
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No registered teams found.</div>`;
+      }
+    }
+
+    // Grade Team Modal
+    function openGradeModal(teamId, currentGrade = 0, currentFeedback = '') {
+      document.getElementById('grade-team-id').value = teamId;
+      document.getElementById('performance-grade').value = currentGrade || '';
+      document.getElementById('performance-feedback').value = currentFeedback;
+      document.getElementById('grade-modal').classList.add('active');
+    }
+
+    function closeGradeModal() {
+      document.getElementById('grade-modal').classList.remove('active');
+    }
+
+    async function saveGrade(e) {
+      e.preventDefault();
+      const teamId = document.getElementById('grade-team-id').value;
+      const payload = {
+        performanceGrade: parseInt(document.getElementById('performance-grade').value) || 0,
+        performanceFeedback: document.getElementById('performance-feedback').value
+      };
+
+      try {
+        const res = await fetch(`/api/teams/${teamId}/grade`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          closeGradeModal();
+          loadInitialData();
+        } else {
+          alert('Failed to save grade.');
+        }
+      } catch (err) {
+        console.error('Error saving grade:', err);
+      }
+    }
+
+    // Check-in Team Modal
+    function openCheckinModal(teamId, defaultEventId) {
+      document.getElementById('checkin-team-id').value = teamId;
+      const select = document.getElementById('checkin-event');
+      select.innerHTML = '';
+
+      allEvents.forEach(e => {
+        const selectedAttr = e._id === defaultEventId ? 'selected' : '';
+        select.innerHTML += `<option value="${e._id}" ${selectedAttr}>${e.title} (${e.status})</option>`;
+      });
+
+      document.getElementById('checkin-modal').classList.add('active');
+    }
+
+    function closeCheckinModal() {
+      document.getElementById('checkin-modal').classList.remove('active');
+    }
+
+    async function saveCheckin(e) {
+      e.preventDefault();
+      const teamId = document.getElementById('checkin-team-id').value;
+      const eventId = document.getElementById('checkin-event').value;
+
+      try {
+        const res = await fetch(`/api/teams/${teamId}/attend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId })
+        });
+
+        if (res.ok) {
+          closeCheckinModal();
+          loadInitialData();
+        } else {
+          alert('Failed to check in team.');
+        }
+      } catch (err) {
+        console.error('Error checking in team:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadInitialData);
+  </script>
+</body>
+</html>

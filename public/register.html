@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Team Registration Portal</title>
+  <meta name="description" content="Register your hackathon team for ClubPulse events and receive your digital QR ticket instantly.">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .member-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .member-row .remove-btn {
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      color: var(--rose);
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .member-row .remove-btn:hover {
+      background: rgba(244, 63, 94, 0.15);
+    }
+
+    .success-banner {
+      display: none;
+      text-align: center;
+      padding: 30px;
+      background: rgba(0, 255, 204, 0.05);
+      border: 1px solid var(--mint-glow);
+      border-radius: 16px;
+      margin-top: 20px;
+    }
+    .success-banner.active {
+      display: block;
+    }
+
+    .step-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+    .step-divider::before,
+    .step-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+  </style>
+</head>
+<body style="background: var(--bg-main);">
+  <div class="public-container">
+    <div class="public-box">
+      <!-- Header -->
+      <div class="public-logo">
+        <i class="fa-solid fa-bolt-lightning" style="margin-right: 8px;"></i> ClubPulse
+      </div>
+      <p style="text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 30px;">
+        Register your hackathon team below. Your confirmation QR ticket will be sent to the leader's email automatically.
+      </p>
+
+      <div class="card">
+        <form id="register-form" onsubmit="submitRegistration(event)">
+          <!-- SECTION 1: Event Selection -->
+          <div class="step-divider">Step 1 — Select Event</div>
+
+          <div class="form-group">
+            <label for="reg-event">Choose Hackathon or Competition Event</label>
+            <select id="reg-event" class="form-control" required>
+              <option value="">Loading available events...</option>
+            </select>
+          </div>
+
+          <!-- SECTION 2: Leader Details -->
+          <div class="step-divider">Step 2 — Team Leader Details</div>
+
+          <div class="form-group">
+            <label for="reg-team-name">Team Name</label>
+            <input type="text" id="reg-team-name" class="form-control" placeholder="e.g. CyberNeura" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label for="reg-leader-name">Leader Full Name</label>
+              <input type="text" id="reg-leader-name" class="form-control" placeholder="e.g. Devon Patel" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-leader-email">Leader Email</label>
+              <input type="email" id="reg-leader-email" class="form-control" placeholder="dev@email.com" required>
+            </div>
+          </div>
+
+          <!-- SECTION 3: Team Members -->
+          <div class="step-divider">Step 3 — Add Team Members</div>
+
+          <div id="members-container">
+            <!-- Dynamic member rows will be inserted here -->
+          </div>
+
+          <button type="button" class="btn btn-secondary" onclick="addMemberRow()" style="width: 100%; margin-bottom: 4px; border-style: dashed; border-color: var(--border-glow); color: var(--violet);">
+            <i class="fa-solid fa-circle-plus"></i> Add Another Member
+          </button>
+
+          <!-- SECTION 4: Submit -->
+          <div class="step-divider">Step 4 — Confirm Registration</div>
+          <button type="submit" class="btn btn-mint" id="submit-btn" style="width: 100%; padding: 14px; font-size: 16px; border-radius: 12px;">
+            <i class="fa-solid fa-paper-plane"></i> Register Team & Get Ticket
+          </button>
+        </form>
+      </div>
+
+      <!-- Success Result Box -->
+      <div class="success-banner" id="success-banner">
+        <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
+        <h3 style="color: var(--mint); font-size: 22px; margin-bottom: 8px;">Registration Successful!</h3>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;" id="success-msg">
+          Your team has been registered. Save your QR ticket below for event check-in.
+        </p>
+        <div class="ticket-result-box">
+          <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">Your Access QR Ticket</div>
+          <img id="qr-ticket-img" src="" alt="QR Code Ticket" class="ticket-qr-image" style="max-width: 200px; max-height: 200px;">
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Present or scan this QR code at the event entrance.</p>
+          <a id="qr-download-link" href="#" download="ticket-qr.png" class="btn btn-secondary btn-sm" style="margin-top: 12px; display: inline-flex;">
+            <i class="fa-solid fa-download"></i> Download Ticket
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Back Links -->
+      <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted);">
+        <a href="index.html" style="color: var(--violet); font-weight: 600;">← Back to Dashboard</a>
+        &nbsp;|&nbsp;
+        <a href="attend.html" style="color: var(--mint); font-weight: 600;">Self Check-in Page →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load FontAwesome for icons -->
+  <script>
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    document.head.appendChild(link);
+  </script>
+  <script>
+    let memberCount = 0;
+
+    function addMemberRow(defaultName = '', defaultEmail = '') {
+      memberCount++;
+      const container = document.getElementById('members-container');
+      const row = document.createElement('div');
+      row.className = 'member-row';
+      row.id = `member-row-${memberCount}`;
+      row.innerHTML = `
+        <input type="text" placeholder="Member Name" class="form-control member-name" value="${defaultName}">
+        <input type="email" placeholder="Member Email" class="form-control member-email" value="${defaultEmail}">
+        <div class="remove-btn" onclick="removeMemberRow(${memberCount})" title="Remove member">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeMemberRow(id) {
+      const row = document.getElementById(`member-row-${id}`);
+      if (row) row.remove();
+    }
+
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        const events = await res.json();
+        const sel = document.getElementById('reg-event');
+        sel.innerHTML = '<option value="">— Select an Event —</option>';
+        events.forEach(e => {
+          const date = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          sel.innerHTML += `<option value="${e._id}">${e.title} (${date}) — ${e.type}</option>`;
+        });
+      } catch (err) {
+        console.error('Error loading events:', err);
+        document.getElementById('reg-event').innerHTML = '<option value="">Error loading events</option>';
+      }
+    }
+
+    async function submitRegistration(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registering...';
+
+      const registeredEvent = document.getElementById('reg-event').value;
+      const name = document.getElementById('reg-team-name').value;
+      const leaderName = document.getElementById('reg-leader-name').value;
+      const leaderEmail = document.getElementById('reg-leader-email').value;
+
+      // Collect members from dynamic rows
+      const memberRows = document.querySelectorAll('.member-row');
+      const members = [];
+      memberRows.forEach(row => {
+        const mName = row.querySelector('.member-name').value.trim();
+        const mEmail = row.querySelector('.member-email').value.trim();
+        if (mName) {
+          members.push({ name: mName, email: mEmail });
+        }
+      });
+
+      const payload = { name, leaderName, leaderEmail, members, registeredEvent };
+
+      try {
+        const res = await fetch('/api/teams/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Registration failed. Please try again.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Register Team & Get Ticket';
+          return;
+        }
+
+        // Show success banner
+        const banner = document.getElementById('success-banner');
+        banner.classList.add('active');
+        banner.scrollIntoView({ behavior: 'smooth' });
+
+        const emailNote = data.emailSent 
+          ? `A confirmation email with this ticket was sent to <strong>${leaderEmail}</strong>.` 
+          : `Confirmation email could not be sent. Please save this QR code screenshot.`;
+
+        document.getElementById('success-msg').innerHTML = 
+          `Your team <strong>${name}</strong> is registered! ${emailNote}`;
+
+        // Display QR Code
+        if (data.qrCode) {
+          const qrImg = document.getElementById('qr-ticket-img');
+          qrImg.src = data.qrCode;
+          const dlLink = document.getElementById('qr-download-link');
+          dlLink.href = data.qrCode;
+        }
+
+        // Hide the form
+        document.getElementById('register-form').style.display = 'none';
+
+      } catch (err) {
+        console.error('Registration error:', err);
+        alert('Network error. Please check if the server is running and try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Register Team & Get Ticket';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEvents();
+      // Pre-add one member row
+      addMemberRow();
+    });
+  </script>
+</body>
+</html>
