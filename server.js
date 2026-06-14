@@ -719,6 +719,85 @@ ${gradedTeams.length > 0
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// 9. AI Chat Mentor
+app.post('/api/ai/mentor', authenticateToken, async (req, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    let responseText = '';
+    if (openai) {
+      const systemPrompt = {
+        role: 'system',
+        content: `You are ChatMentor, a premium AI Hackathon and Project Mentor inside the ClubPulse dashboard. 
+        You help students, developers, and organizers with:
+        - Choosing tech stacks (e.g. React, Node.js, Python, MongoDB).
+        - Brainstorming creative hackathon project ideas.
+        - Team formation, division of tasks, and pitch deck creation.
+        - Coding assistance, debugging advice, and architectural patterns.
+        Keep your advice structured, professional, inspiring, and concise. Use markdown formatting with bullet points and bold headers.`
+      };
+      
+      const messages = [systemPrompt];
+      if (history && Array.isArray(history)) {
+        history.forEach(h => {
+          messages.push({ role: h.role, content: h.content });
+        });
+      }
+      messages.push({ role: 'user', content: message });
+
+      const completion = await openai.chat.completions.create({
+        messages,
+        model: 'gpt-4o-mini'
+      });
+      responseText = completion.choices[0].message.content;
+    } else {
+      // Mock Fallback engine
+      const msgLower = message.toLowerCase();
+      if (msgLower.includes('idea') || msgLower.includes('brainstorm') || msgLower.includes('project')) {
+        responseText = `### 💡 AI Mentor Project Ideas
+Here are three premium project ideas matching your hackathon environment:
+1. **EcoTrack IoT:** An analytics dashboard tracking local community carbon footprints using real-time sensor integration.
+2. **HealthSphere:** A decentralized web platform that utilizes AI to analyze dietary habits and suggest preventive care.
+3. **SmartEdu Portal:** An adaptive education tool matching learning styles with tailored visual quizzes.
+
+**Mentor Tip:** Focus on building a working *Minimum Viable Product (MVP)* instead of a complete feature set. Present a clean UI and solid core flow!`;
+      } else if (msgLower.includes('tech') || msgLower.includes('stack') || msgLower.includes('database') || msgLower.includes('react') || msgLower.includes('node')) {
+        responseText = `### 🛠️ Recommended Tech Stacks
+For hackathons, speed of development and ease of integration are key:
+- **Frontend:** React.js, Tailwind CSS, or Vite for blazing fast setups.
+- **Backend:** Node.js with Express.js (extremely quick to write APIs).
+- **Database:** MongoDB (schemaless, stores JSON structures directly) or PostgreSQL (if you need relational data).
+- **Hosting:** Vercel (frontend) and Render (backend) for quick deployment.
+
+**Mentor Tip:** Stick to technologies you already know. A hackathon is not the best place to learn a complex new language from scratch!`;
+      } else if (msgLower.includes('pitch') || msgLower.includes('presentation') || msgLower.includes('slide') || msgLower.includes('demo')) {
+        responseText = `### 🎤 Pitching & Presentation Guide
+A winning hackathon pitch should cover the following points in under 3 minutes:
+1. **The Hook:** Start with a compelling problem statement or a real-world story.
+2. **The Solution:** Briefly demonstrate your application (show, don't just tell).
+3. **Tech Stack & Architecture:** Briefly explain the technical design and integrations.
+4. **Market & Impact:** Who will use this, and why does it matter?
+5. **Future Roadmap:** How would you scale this post-hackathon?
+
+**Mentor Tip:** Make sure your live demo works! If it's risky, prepare a backup video recording of the working app flow.`;
+      } else {
+        responseText = `### 👋 Hello! I am ChatMentor, your AI Hackathon guide.
+I can help you with:
+- **Project Ideas:** Ask me to suggest project concepts.
+- **Tech Stack advice:** Get recommendations on databases, frameworks, and APIs.
+- **Presentation Tips:** Learn how to pitch to judges and design slide decks.
+- **Debugging & Architecture:** Ask about architectural patterns or task division.
+
+How can I help you succeed today?`;
+      }
+    }
+    res.json({ reply: responseText });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Route for simple server status check
 app.get('/api/status', (req, res) => {
   res.json({

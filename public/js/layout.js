@@ -68,6 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-qrcode"></i> QR Scanner
           </a>
         </li>
+        <li class="sidebar-menu-item ${pageName === 'mentor.html' ? 'active' : ''}">
+          <a href="mentor.html">
+            <i class="fa-solid fa-comments"></i> Chat Mentor
+          </a>
+        </li>
         
         <li style="margin: 20px 0 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1.5px;">
           Public Portals

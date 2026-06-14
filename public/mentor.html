@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Chat Mentor</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      height: calc(100vh - var(--header-height) - 70px);
+      gap: 24px;
+    }
+
+    .chat-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .chat-mentor-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mentor-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--mint), var(--violet));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(22, 163, 74, 0.2);
+    }
+
+    .mentor-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--mint);
+      background: rgba(22, 163, 74, 0.1);
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--mint-glow);
+      font-weight: 600;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .message-row {
+      display: flex;
+      width: 100%;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .message-row.assistant {
+      justify-content: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 75%;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      position: relative;
+    }
+
+    .message-row.user .message-bubble {
+      background: linear-gradient(135deg, var(--mint), #15803d);
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+      border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .message-row.assistant .message-bubble {
+      background: var(--bg-sidebar);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .message-bubble h3 {
+      color: var(--mint);
+      margin: 12px 0 6px 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .message-bubble h3:first-child {
+      margin-top: 0;
+    }
+
+    .message-bubble ul {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+
+    .message-bubble li {
+      margin-bottom: 4px;
+    }
+
+    .message-bubble strong {
+      color: var(--violet);
+      font-weight: 700;
+    }
+
+    .message-row.user .message-bubble strong {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    .chat-chips-container {
+      padding: 12px 24px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .chat-chip {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-chip:hover {
+      background: rgba(22, 163, 74, 0.08);
+      color: var(--mint);
+      border-color: var(--mint-glow);
+      transform: translateY(-1px);
+    }
+
+    .chat-input-area {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .chat-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input {
+      width: 100%;
+      background: var(--bg-main);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 14px;
+      color: var(--text-primary);
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .chat-input:focus {
+      border-color: var(--mint);
+      box-shadow: 0 0 10px var(--mint-glow);
+    }
+
+    .btn-send {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--mint), #15803d);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      box-shadow: 0 4px 15px var(--mint-glow);
+      flex-shrink: 0;
+    }
+
+    .btn-send:hover {
+      opacity: 0.95;
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(22, 163, 74, 0.4);
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 10px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: typing-bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+      <div class="chat-layout">
+        <div class="card chat-card">
+          <!-- Chat Header -->
+          <div class="chat-header">
+            <div class="chat-mentor-info">
+              <div class="mentor-avatar">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 2px 0;">AI ChatMentor</h3>
+                <div class="mentor-status-badge">
+                  <span class="status-dot active"></span>
+                  <span>Active Session</span>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+              Powered by GPT-4o-mini
+            </div>
+          </div>
+
+          <!-- Messages Box -->
+          <div class="chat-messages" id="chat-messages">
+            <!-- Greeting Message -->
+            <div class="message-row assistant">
+              <div class="message-bubble">
+                👋 Hello! I am your **AI ChatMentor**. I am here to help you design award-winning hackathon entries, choose tech stacks, split up work amongst teammates, and construct high-converting pitch decks.
+                <br><br>
+                How can I assist you in your hackathon journey today? Try typing a question, or click one of the quick options below!
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Prompts Chips -->
+          <div class="chat-chips-container">
+            <div class="chat-chip" onclick="sendQuickPrompt('Brainstorm innovative hackathon project ideas')">
+              <i class="fa-solid fa-lightbulb"></i> Project Ideas
+            </div>
+            <div class="chat-chip" onclick="sendQuickPrompt('What tech stack is recommended for speed and scalability?')">
+              <i class="fa-solid fa-layer-group"></i> Best Tech Stacks
+            </div>
+            <div class="chat-chip" onclick="sendQuickPrompt('Provide a template for a winning 3-minute hackathon pitch')">
+              <i class="fa-solid fa-microphone"></i> Pitching Guides
+            </div>
+            <div class="chat-chip" onclick="sendQuickPrompt('How should we divide tasks in a 4-person team?')">
+              <i class="fa-solid fa-sitemap"></i> Team Division
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <form onsubmit="handleChatSubmit(event)">
+            <div class="chat-input-area">
+              <div class="chat-input-wrapper">
+                <input type="text" id="chat-input-field" class="chat-input" placeholder="Ask ChatMentor anything..." autocomplete="off" required>
+              </div>
+              <button type="submit" class="btn-send">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    const chatMessages = document.getElementById('chat-messages');
+    const inputField = document.getElementById('chat-input-field');
+    let messageHistory = [];
+
+    // Helper: format markdown in message bubbles
+    function formatMarkdown(text) {
+      if (!text) return '';
+      let formatted = text
+        // Headings
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h3>$1</h3>')
+        // Bold
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Bullet lists
+        .replace(/^\- (.*$)/gim, '<li>$1</li>');
+
+      formatted = formatted.replace(/(<li>.*<\/li>)/gs, (match) => {
+        return `<ul>${match}</ul>`;
+      });
+
+      return formatted;
+    }
+
+    function appendMessage(sender, text, isMarkdown = true) {
+      const row = document.createElement('div');
+      row.className = `message-row ${sender}`;
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      
+      if (isMarkdown) {
+        bubble.innerHTML = formatMarkdown(text);
+      } else {
+        bubble.textContent = text;
+      }
+      
+      row.appendChild(bubble);
+      chatMessages.appendChild(row);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      // Track history (only keep text versions for API context)
+      messageHistory.push({
+        role: sender === 'user' ? 'user' : 'assistant',
+        content: text
+      });
+    }
+
+    function appendTypingIndicator() {
+      const row = document.createElement('div');
+      row.className = 'message-row assistant';
+      row.id = 'typing-indicator-row';
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      
+      bubble.innerHTML = `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      
+      row.appendChild(bubble);
+      chatMessages.appendChild(row);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typing-indicator-row');
+      if (indicator) indicator.remove();
+    }
+
+    async function sendPrompt(messageText) {
+      if (!messageText) return;
+      
+      // User message
+      appendMessage('user', messageText, false);
+      
+      // Add typing indicator
+      appendTypingIndicator();
+
+      try {
+        // Send request with history context
+        const res = await fetch('/api/ai/mentor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: messageText,
+            history: messageHistory.slice(-6) // Send last 6 messages as chat history context
+          })
+        });
+
+        const data = await res.json();
+        removeTypingIndicator();
+
+        if (!res.ok) {
+          appendMessage('assistant', `⚠️ Sorry, I encountered an error: ${data.error || 'Server error'}`);
+          return;
+        }
+
+        appendMessage('assistant', data.reply);
+      } catch (err) {
+        removeTypingIndicator();
+        appendMessage('assistant', '⚠️ Network error. Please verify the server is running and try again.');
+      }
+    }
+
+    function handleChatSubmit(e) {
+      e.preventDefault();
+      const message = inputField.value.trim();
+      if (!message) return;
+      inputField.value = '';
+      sendPrompt(message);
+    }
+
+    function sendQuickPrompt(promptText) {
+      sendPrompt(promptText);
+    }
+
+    // Scroll to bottom initially
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  </script>
+</body>
+</html>

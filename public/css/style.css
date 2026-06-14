@@ -4,25 +4,25 @@
    Design System & Global Variables
    ========================================================================== */
 :root {
-  --bg-main: #090a0f;
-  --bg-sidebar: #0f111a;
-  --bg-card: rgba(20, 22, 33, 0.65);
-  --bg-card-hover: rgba(28, 30, 46, 0.85);
-  --border-glow: rgba(168, 85, 247, 0.2);
-  --border-glow-hover: rgba(168, 85, 247, 0.45);
+  --bg-main: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: rgba(255, 255, 255, 1);
+  --border-glow: rgba(34, 197, 94, 0.15);
+  --border-glow-hover: rgba(34, 197, 94, 0.35);
   
-  --mint: #00ffcc;
-  --mint-glow: rgba(0, 255, 204, 0.35);
-  --violet: #a855f7;
-  --violet-glow: rgba(168, 85, 247, 0.4);
-  --gold: #fbbf24;
-  --gold-glow: rgba(251, 191, 36, 0.35);
-  --rose: #f43f5e;
+  --mint: #16a34a;
+  --mint-glow: rgba(22, 163, 74, 0.2);
+  --violet: #22c55e;
+  --violet-glow: rgba(34, 197, 94, 0.25);
+  --gold: #d97706;
+  --gold-glow: rgba(217, 119, 6, 0.2);
+  --rose: #dc2626;
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --text-muted: #64748b;
-  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(15, 23, 42, 0.08);
   
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -42,7 +42,7 @@
   padding: 0;
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: rgba(15, 23, 42, 0.08) transparent;
 }
 
 body {
@@ -52,8 +52,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(0, 255, 204, 0.05) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(22, 163, 74, 0.03) 0px, transparent 50%);
 }
 
 a {
@@ -289,7 +289,7 @@ button, input, select, textarea {
   padding: 24px;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.04);
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
@@ -309,7 +309,7 @@ button, input, select, textarea {
 .card:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-glow);
-  box-shadow: 0 12px 40px 0 rgba(168, 85, 247, 0.08);
+  box-shadow: 0 12px 40px 0 rgba(34, 197, 94, 0.08);
   transform: translateY(-2px);
 }
 
