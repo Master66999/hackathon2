@@ -122,8 +122,33 @@
       <div class="card">
         <div class="card-title">
           <span>AI Cognitive Terminal Feed</span>
-          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
-            channel: secure-llm-link
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+              channel: secure-llm-link
+            </div>
+            <button id="btn-download-report"
+              onclick="downloadReport()"
+              style="
+                display: none;
+                align-items: center;
+                gap: 6px;
+                padding: 7px 14px;
+                border-radius: 8px;
+                border: 1px solid rgba(22, 163, 74, 0.4);
+                background: rgba(22, 163, 74, 0.08);
+                color: #22c55e;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: var(--font-mono);
+                letter-spacing: 0.3px;
+                transition: all 0.2s;
+                white-space: nowrap;
+              "
+              onmouseover="this.style.background='rgba(22,163,74,0.18)'; this.style.borderColor='rgba(22,163,74,0.7)'; this.style.boxShadow='0 0 12px rgba(22,163,74,0.25)';"
+              onmouseout="this.style.background='rgba(22,163,74,0.08)'; this.style.borderColor='rgba(22,163,74,0.4)'; this.style.boxShadow='none';">
+              <i class="fa-solid fa-download"></i> Download Report
+            </button>
           </div>
         </div>
         <div class="ai-terminal" id="terminal-screen">
@@ -138,6 +163,31 @@
   <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
   <script>
     let typingInterval = null;
+    let lastReportText = ''; // Store raw report text for download
+    let lastReportType = 'report';
+
+    // ── Download Report as .txt ──────────────────────────────────
+    function downloadReport() {
+      if (!lastReportText) return;
+      const filename = `clubpulse_${lastReportType}_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.txt`;
+      const blob = new Blob([lastReportText], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function showDownloadBtn() {
+      const btn = document.getElementById('btn-download-report');
+      btn.style.display = 'flex';
+    }
+
+    function hideDownloadBtn() {
+      const btn = document.getElementById('btn-download-report');
+      btn.style.display = 'none';
+    }
+
 
     // A helper to format simple markdown strings into HTML tags
     function formatMarkdown(text) {
@@ -231,11 +281,15 @@
         const data = await res.json();
         
         const rawReport = data.report || data.prediction;
+        lastReportText = rawReport || '';
+        lastReportType = type;
         const htmlReport = formatMarkdown(rawReport);
 
-        typeEffect(termContent, htmlReport);
+        hideDownloadBtn();
+        typeEffect(termContent, htmlReport, showDownloadBtn);
       } catch (err) {
         cursor.style.display = 'none';
+        hideDownloadBtn();
         termContent.innerHTML = `<span style="color: var(--rose);">[ERROR] System was unable to process LLM request. Verify backend connection is active.</span>`;
       }
     }
@@ -272,10 +326,14 @@
 
         if (!res.ok) throw new Error(data.error || 'Unknown error');
 
+        lastReportText = data.report || '';
+        lastReportType = `event_${selectedEventName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
         const htmlReport = formatMarkdown(data.report);
-        typeEffect(termContent, htmlReport);
+        hideDownloadBtn();
+        typeEffect(termContent, htmlReport, showDownloadBtn);
       } catch (err) {
         cursor.style.display = 'none';
+        hideDownloadBtn();
         termContent.innerHTML = `<span style="color: var(--rose);">[ERROR] ${err.message || 'Could not generate event report. Check backend connection.'}</span>`;
       }
     }
