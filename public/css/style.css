@@ -476,6 +476,12 @@ button, input, select, textarea {
   border-radius: 8px;
 }
 
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 6px;
+}
+
 /* Badges */
 .badge {
   display: inline-flex;

@@ -54,6 +54,12 @@
       <form id="member-form" onsubmit="saveMember(event)">
         <input type="hidden" id="member-id">
         <div class="modal-body">
+          <div class="form-group" id="import-team-group">
+            <label for="import-team-member">Import from Registered Team Member</label>
+            <select id="import-team-member" class="form-control" onchange="onImportMemberSelect()">
+              <option value="">-- Or select a participant to auto-fill --</option>
+            </select>
+          </div>
           <div class="form-group">
             <label for="member-name">Full Name</label>
             <input type="text" id="member-name" class="form-control" placeholder="e.g. Alex Rivera" required>
@@ -99,7 +105,7 @@
     </div>
   </div>
 
-  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
   <script>
     let allMembers = [];
     let currentFilter = 'all';
@@ -165,6 +171,57 @@
       renderMembers();
     }
 
+    async function populateTeamMembersDropdown() {
+      const select = document.getElementById('import-team-member');
+      select.innerHTML = '<option value="">-- Or select a participant to auto-fill --</option>';
+      try {
+        const res = await fetch('/api/teams');
+        const teams = await res.json();
+        
+        const seenEmails = new Set();
+        
+        // Filter out existing members
+        const membersRes = await fetch('/api/members');
+        const existingMembers = await membersRes.json();
+        existingMembers.forEach(m => seenEmails.add(m.email.toLowerCase()));
+
+        teams.forEach(team => {
+          if (team.leaderEmail && !seenEmails.has(team.leaderEmail.toLowerCase())) {
+            seenEmails.add(team.leaderEmail.toLowerCase());
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify({ name: team.leaderName, email: team.leaderEmail });
+            opt.textContent = `${team.leaderName} (Leader, Team: ${team.name})`;
+            select.appendChild(opt);
+          }
+          if (team.members && Array.isArray(team.members)) {
+            team.members.forEach(m => {
+              if (m.email && !seenEmails.has(m.email.toLowerCase())) {
+                seenEmails.add(m.email.toLowerCase());
+                const opt = document.createElement('option');
+                opt.value = JSON.stringify({ name: m.name, email: m.email });
+                opt.textContent = `${m.name} (Member, Team: ${team.name})`;
+                select.appendChild(opt);
+              }
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Error fetching teams for dropdown:', err);
+      }
+    }
+
+    function onImportMemberSelect() {
+      const select = document.getElementById('import-team-member');
+      if (select.value) {
+        const data = JSON.parse(select.value);
+        document.getElementById('member-name').value = data.name;
+        document.getElementById('member-email').value = data.email;
+      } else {
+        document.getElementById('member-name').value = '';
+        document.getElementById('member-email').value = '';
+      }
+    }
+
     function openMemberModal(member = null) {
       const modal = document.getElementById('member-modal');
       const form = document.getElementById('member-form');
@@ -172,6 +229,7 @@
 
       if (member) {
         title.textContent = 'Edit Member Profile';
+        document.getElementById('import-team-group').style.display = 'none';
         document.getElementById('member-id').value = member._id;
         document.getElementById('member-name').value = member.name;
         document.getElementById('member-email').value = member.email;
@@ -182,9 +240,11 @@
       } else {
         title.textContent = 'Add New Member';
         form.reset();
+        document.getElementById('import-team-group').style.display = 'block';
         document.getElementById('member-id').value = '';
         document.getElementById('member-tasks').value = 0;
         document.getElementById('member-score').value = 0;
+        populateTeamMembersDropdown();
       }
 
       modal.classList.add('active');

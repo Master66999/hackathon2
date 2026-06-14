@@ -78,10 +78,11 @@
     </div>
   </div>
 
-  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
   <script>
     let allTeams = [];
     let allEvents = [];
+    let allMembers = [];
 
     async function loadInitialData() {
       try {
@@ -91,9 +92,42 @@
         const teamsRes = await fetch('/api/teams');
         allTeams = await teamsRes.json();
         
+        const membersRes = await fetch('/api/members');
+        allMembers = await membersRes.json();
+        
         renderTeams();
       } catch (err) {
         console.error('Error loading initial data:', err);
+      }
+    }
+
+    async function assignToClub(name, email) {
+      if (!confirm(`Are you sure you want to assign/promote ${name} (${email}) as a Club Member?`)) return;
+      try {
+        const payload = {
+          name,
+          email,
+          role: 'Member',
+          status: 'active',
+          completedTasks: 0,
+          engagementScore: 10
+        };
+        const res = await fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert(`Successfully assigned ${name} as a Club Member!`);
+          loadInitialData();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Failed to assign member to club.');
+        }
+      } catch (err) {
+        console.error('Error assigning member to club:', err);
+        alert('An error occurred during promotion.');
       }
     }
 
@@ -115,6 +149,11 @@
 
           const attendedCount = team.attendedEvents ? team.attendedEvents.length : 0;
 
+          const isLeaderClubMember = allMembers.some(m => m.email.toLowerCase() === team.leaderEmail.toLowerCase());
+          const leaderBadgeOrBtn = isLeaderClubMember
+            ? `<span class="badge badge-active" style="padding: 2px 6px; font-size: 9px; font-weight: 600; text-transform: none; letter-spacing: 0;"><i class="fa-solid fa-circle-check"></i> Club Member</span>`
+            : `<button class="btn btn-mint btn-xs" style="font-size: 9px; padding: 2px 6px;" onclick="assignToClub('${team.leaderName.replace(/'/g, "\\'")}', '${team.leaderEmail.replace(/'/g, "\\'")}')"><i class="fa-solid fa-user-plus"></i> Assign to Club</button>`;
+
           grid.innerHTML += `
             <div class="card event-card" id="team-${team._id}">
               <div class="event-meta">
@@ -127,15 +166,26 @@
               <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-shield-halved" style="color: var(--violet); font-size: 14px;"></i> ${team.name}
               </h4>
-              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                Leader: <strong>${team.leaderName}</strong> (${team.leaderEmail})
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <span>Leader: <strong>${team.leaderName}</strong> (${team.leaderEmail})</span>
+                ${leaderBadgeOrBtn}
               </div>
               
               <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
                 <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px;">Members (${team.members ? team.members.length : 0})</div>
-                <ul style="list-style: none; font-size: 12px; color: var(--text-primary); display: flex; flex-direction: column; gap: 4px;">
+                <ul style="list-style: none; font-size: 12px; color: var(--text-primary); display: flex; flex-direction: column; gap: 6px;">
                   ${team.members && team.members.length > 0 
-                    ? team.members.map(m => `<li><i class="fa-regular fa-user" style="margin-right: 6px; font-size: 10px; color: var(--violet);"></i> ${m.name} (${m.email})</li>`).join('')
+                    ? team.members.map(m => {
+                        const isClubMember = allMembers.some(cm => cm.email.toLowerCase() === m.email.toLowerCase());
+                        const memberBadgeOrBtn = isClubMember
+                          ? `<span class="badge badge-active" style="padding: 1px 4px; font-size: 8px; font-weight: 600; text-transform: none; letter-spacing: 0;"><i class="fa-solid fa-circle-check"></i> Club Member</span>`
+                          : `<button class="btn btn-mint btn-xs" style="font-size: 8px; padding: 1px 4px;" onclick="assignToClub('${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}')"><i class="fa-solid fa-user-plus"></i> Assign to Club</button>`;
+                        
+                        return `<li style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
+                          <span><i class="fa-regular fa-user" style="margin-right: 6px; font-size: 10px; color: var(--violet);"></i> ${m.name} (${m.email})</span>
+                          ${memberBadgeOrBtn}
+                        </li>`;
+                      }).join('')
                     : '<li style="color: var(--text-muted); font-style: italic;">No additional team members listed.</li>'
                   }
                 </ul>

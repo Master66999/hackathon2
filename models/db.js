@@ -6,6 +6,7 @@ const RealEvent = require('./Event');
 const RealTask = require('./Task');
 const RealTeam = require('./Team');
 const RealProblemStatement = require('./ProblemStatement');
+const RealUser = require('./User');
 
 let isConnected = false;
 let useMock = false;
@@ -16,7 +17,8 @@ const dbMemory = {
   events: [],
   tasks: [],
   teams: [],
-  problemstatements: []
+  problemstatements: [],
+  users: []
 };
 
 // Fluent Query Mock
@@ -222,7 +224,8 @@ const MockModels = {
   Event: new MockModel('Event', dbMemory.events),
   Task: new MockModel('Task', dbMemory.tasks),
   Team: new MockModel('Team', dbMemory.teams),
-  ProblemStatement: new MockModel('ProblemStatement', dbMemory.problemstatements)
+  ProblemStatement: new MockModel('ProblemStatement', dbMemory.problemstatements),
+  User: new MockModel('User', dbMemory.users)
 };
 
 // Seed default simulated data
@@ -379,7 +382,8 @@ async function connectDb() {
     Event: RealEvent,
     Task: RealTask,
     Team: RealTeam,
-    ProblemStatement: RealProblemStatement
+    ProblemStatement: RealProblemStatement,
+    User: RealUser
   };
 
   try {
@@ -419,5 +423,6 @@ module.exports = {
   get Event() { return getModel('Event'); },
   get Task() { return getModel('Task'); },
   get Team() { return getModel('Team'); },
-  get ProblemStatement() { return getModel('ProblemStatement'); }
+  get ProblemStatement() { return getModel('ProblemStatement'); },
+  get User() { return getModel('User'); }
 };

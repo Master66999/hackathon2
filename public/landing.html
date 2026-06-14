@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse — Smart Hackathon Club Platform</title>
+  <meta name="description" content="Run your hackathon club like a pro. Manage members, events, teams, and AI-powered reports — all in one beautiful dashboard.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #050608;
+      --mint: #00ffcc;
+      --violet: #a855f7;
+      --gold: #fbbf24;
+      --rose: #f43f5e;
+      --text: #f8fafc;
+      --muted: #64748b;
+      --border: rgba(255,255,255,0.07);
+      --card-bg: rgba(15,17,26,0.7);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .bg-canvas::before {
+      content: '';
+      position: absolute;
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%);
+      top: -200px; left: -200px;
+      animation: float1 12s ease-in-out infinite alternate;
+    }
+    .bg-canvas::after {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,255,204,0.1) 0%, transparent 70%);
+      bottom: -100px; right: -100px;
+      animation: float2 10s ease-in-out infinite alternate;
+    }
+    @keyframes float1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,60px) scale(1.1); } }
+    @keyframes float2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px,-40px) scale(1.15); } }
+
+    /* ── Particle dots ── */
+    .particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .particle {
+      position: absolute;
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: rgba(168,85,247,0.6);
+      animation: drift linear infinite;
+    }
+    @keyframes drift {
+      0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) translateX(var(--dx, 20px)); opacity: 0; }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 60px;
+      background: rgba(5,6,8,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-brand {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--mint), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; align-items: center; gap: 12px; }
+    .btn-nav-ghost {
+      padding: 9px 22px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .btn-nav-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+    .btn-nav-primary {
+      padding: 9px 22px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      color: #050608;
+      background: linear-gradient(135deg, var(--mint), #00d4aa);
+      border: none;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(0,255,204,0.3);
+    }
+    .btn-nav-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 0 30px rgba(0,255,204,0.5); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: 100px;
+      background: rgba(168,85,247,0.1);
+      border: 1px solid rgba(168,85,247,0.3);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--violet);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-title {
+      font-size: clamp(42px, 7vw, 88px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      max-width: 900px;
+      margin-bottom: 28px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .hero-title .grad-mint {
+      background: linear-gradient(135deg, var(--mint), #00d4aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-title .grad-violet {
+      background: linear-gradient(135deg, var(--violet), #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      font-size: 18px;
+      color: #94a3b8;
+      max-width: 580px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .btn-cta-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      color: #050608;
+      background: linear-gradient(135deg, var(--mint), #00d4aa);
+      border: none;
+      box-shadow: 0 0 30px rgba(0,255,204,0.35);
+      transition: all 0.2s;
+    }
+    .btn-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(0,255,204,0.55); }
+    .btn-cta-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: all 0.2s;
+    }
+    .btn-cta-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+
+    /* Stats row */
+    .hero-stats {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      margin-top: 64px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .stat-item { text-align: center; }
+    .stat-number {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--mint), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── FEATURES ── */
+    .features {
+      position: relative;
+      z-index: 10;
+      padding: 100px 60px;
+    }
+    .section-tag {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--mint);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      text-align: center;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      text-align: center;
+      color: #94a3b8;
+      max-width: 520px;
+      margin: 0 auto 64px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      backdrop-filter: blur(16px);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent, linear-gradient(90deg, transparent, var(--violet), transparent));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+    .fi-mint { background: rgba(0,255,204,0.1); color: var(--mint); border-color: rgba(0,255,204,0.25); }
+    .fi-violet { background: rgba(168,85,247,0.1); color: var(--violet); border-color: rgba(168,85,247,0.25); }
+    .fi-gold { background: rgba(251,191,36,0.1); color: var(--gold); border-color: rgba(251,191,36,0.25); }
+    .fi-rose { background: rgba(244,63,94,0.1); color: var(--rose); border-color: rgba(244,63,94,0.25); }
+    .fi-blue { background: rgba(59,130,246,0.1); color: #60a5fa; border-color: rgba(59,130,246,0.25); }
+    .fi-cyan { background: rgba(0,191,255,0.1); color: #00bfff; border-color: rgba(0,191,255,0.25); }
+
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { font-size: 14px; color: #94a3b8; line-height: 1.65; }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      position: relative;
+      z-index: 10;
+      padding: 100px 60px;
+      background: linear-gradient(180deg, transparent, rgba(168,85,247,0.04), transparent);
+    }
+    .steps {
+      display: flex;
+      gap: 32px;
+      max-width: 1000px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .step-item {
+      flex: 1;
+      min-width: 220px;
+      max-width: 280px;
+      text-align: center;
+    }
+    .step-number {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--violet), #7c3aed);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 30px rgba(168,85,247,0.4);
+    }
+    .step-item h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .step-item p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+
+    /* ── CTA BANNER ── */
+    .cta-banner {
+      position: relative;
+      z-index: 10;
+      margin: 40px 60px 100px;
+      background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(0,255,204,0.08));
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 28px;
+      padding: 72px 48px;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+    }
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% -20%, rgba(168,85,247,0.2), transparent 70%);
+      pointer-events: none;
+    }
+    .cta-banner h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+    .cta-banner p { font-size: 17px; color: #94a3b8; margin-bottom: 40px; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 32px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .features, .how { padding: 60px 24px; }
+      .cta-banner { margin: 20px 24px 60px; padding: 48px 24px; }
+      .hero-stats { gap: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background effects -->
+  <div class="bg-canvas"></div>
+  <div class="particles" id="particles"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <a class="nav-brand" href="landing.html">
+      <i class="fa-solid fa-bolt-lightning"></i> ClubPulse
+    </a>
+    <div class="nav-links">
+      <a class="btn-nav-ghost" href="login.html">Sign In</a>
+      <a class="btn-nav-primary" href="signup.html">Get Started Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <i class="fa-solid fa-sparkles"></i> AI-Powered Club Management
+    </div>
+    <h1 class="hero-title">
+      Run Your Club Like<br>
+      <span class="grad-mint">A</span> <span class="grad-violet">Pro.</span>
+    </h1>
+    <p class="hero-sub">
+      The all-in-one smart dashboard for hackathon clubs. Manage members, events, teams, AI reports — beautifully organized and scoped just for you.
+    </p>
+    <div class="hero-cta">
+      <a href="signup.html" class="btn-cta-primary">
+        <i class="fa-solid fa-rocket"></i> Start for Free
+      </a>
+      <a href="login.html" class="btn-cta-ghost">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-number">∞</div>
+        <div class="stat-label">Members per Club</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">AI</div>
+        <div class="stat-label">Smart Reports</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">QR</div>
+        <div class="stat-label">Attendance Scanner</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Your Data, Private</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="section-tag">Features</div>
+    <h2 class="section-title">Everything Your Club Needs</h2>
+    <p class="section-sub">From member management to AI-powered forecasts — ClubPulse has every tool built-in.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon fi-mint"><i class="fa-solid fa-users"></i></div>
+        <h3>Member Management</h3>
+        <p>Track every member's engagement score, completed tasks, role, and activity. Build a leaderboard that rewards top performers.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-violet"><i class="fa-solid fa-calendar-days"></i></div>
+        <h3>Event Operations</h3>
+        <p>Create and manage hackathons, workshops, and socials. Track status, capacity, and attendance in real-time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-gold"><i class="fa-solid fa-people-group"></i></div>
+        <h3>Team Registration</h3>
+        <p>Let teams self-register with leader info and members. Auto-generate QR tickets and send confirmation emails instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-rose"><i class="fa-solid fa-code"></i></div>
+        <h3>Problem Statements</h3>
+        <p>Create hackathon challenges and allocate them to teams — manually or with one-click AI-powered random allocation.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue"><i class="fa-solid fa-brain"></i></div>
+        <h3>AI Reports & Forecasts</h3>
+        <p>Generate executive summaries, predict growth, auto-schedule tasks, and analyze individual event performance with GPT-powered AI.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan"><i class="fa-solid fa-qrcode"></i></div>
+        <h3>QR Code Attendance</h3>
+        <p>Scan team QR tickets using your camera for instant check-in. Works offline and syncs attendance scores automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it Works -->
+  <section class="how">
+    <div class="section-tag">How It Works</div>
+    <h2 class="section-title">Up and Running in Minutes</h2>
+    <p class="section-sub">No setup headaches. Your club dashboard is live the moment you sign up.</p>
+    <div class="steps">
+      <div class="step-item">
+        <div class="step-number">1</div>
+        <h3>Create Your Account</h3>
+        <p>Sign up with your name and club name. Each account gets a completely isolated workspace.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-number">2</div>
+        <h3>Add Members & Events</h3>
+        <p>Populate your club roster and create your upcoming hackathons, workshops, and meetups.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-number">3</div>
+        <h3>Track Everything Live</h3>
+        <p>Watch your dashboard come alive — charts, leaderboards, and AI insights updating in real-time.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-number">4</div>
+        <h3>Generate AI Reports</h3>
+        <p>One-click executive reports and event analyses powered by GPT — impress your sponsors and faculty.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <div class="cta-banner">
+    <h2>Ready to Supercharge Your Club?</h2>
+    <p>Join ClubPulse for free — no credit card required. Your data stays yours, always.</p>
+    <a href="signup.html" class="btn-cta-primary" style="display: inline-flex;">
+      <i class="fa-solid fa-rocket"></i> Create Free Account
+    </a>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div style="margin-bottom: 8px;">
+      <span style="background: linear-gradient(135deg, var(--mint), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700;">ClubPulse</span>
+      &nbsp;·&nbsp; Smart Hackathon Club Platform
+    </div>
+    <div>Built with ❤️ for club organizers everywhere.</div>
+  </footer>
+
+  <script>
+    // Redirect if already logged in
+    const token = localStorage.getItem('cp_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 > Date.now()) {
+          window.location.href = 'index.html';
+        }
+      } catch {}
+    }
+
+    // Generate floating particles
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 40; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'particle';
+      dot.style.cssText = `
+        left: ${Math.random() * 100}%;
+        animation-duration: ${8 + Math.random() * 12}s;
+        animation-delay: ${Math.random() * 10}s;
+        --dx: ${(Math.random() - 0.5) * 100}px;
+        background: ${Math.random() > 0.5 ? 'rgba(168,85,247,0.6)' : 'rgba(0,255,204,0.5)'};
+        width: ${1 + Math.random() * 2}px;
+        height: ${1 + Math.random() * 2}px;
+      `;
+      container.appendChild(dot);
+    }
+  </script>
+</body>
+</html>

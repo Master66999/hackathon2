@@ -41,6 +41,11 @@
     .markdown-body strong {
       color: var(--text-primary);
     }
+    .markdown-body hr {
+      border: none;
+      border-top: 1px solid var(--border-glow);
+      margin: 12px 0;
+    }
   </style>
 </head>
 <body>
@@ -57,6 +62,60 @@
         <button class="btn btn-secondary" onclick="generateReport('schedule')" style="border-color: var(--gold-glow); color: var(--gold);">
           <i class="fa-solid fa-clock"></i> Auto-Schedule Tasks
         </button>
+      </div>
+
+      <!-- Event Report Section -->
+      <div class="card" style="margin-bottom: 24px; border-color: rgba(245,158,11,0.3); background: linear-gradient(135deg, rgba(245,158,11,0.04) 0%, rgba(13,14,18,0) 60%);">
+        <div class="card-title" style="margin-bottom: 14px;">
+          <span><i class="fa-solid fa-calendar-check" style="color: var(--gold); margin-right: 8px;"></i>Generate Event Report</span>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">AI-powered per-event deep analysis</div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <div style="position: relative; flex: 1; min-width: 220px;">
+            <select id="event-select"
+              style="
+                width: 100%;
+                background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(245,158,11,0.35);
+                border-radius: 10px;
+                color: var(--text-primary);
+                font-family: var(--font-mono);
+                font-size: 13px;
+                padding: 10px 38px 10px 16px;
+                appearance: none;
+                -webkit-appearance: none;
+                cursor: pointer;
+                outline: none;
+                transition: border-color 0.2s, box-shadow 0.2s;
+              "
+              onfocus="this.style.borderColor='var(--gold)'; this.style.boxShadow='0 0 0 3px rgba(245,158,11,0.15)'"
+              onblur="this.style.borderColor='rgba(245,158,11,0.35)'; this.style.boxShadow='none'">
+              <option value="" disabled selected style="background:#1a1c24; color: var(--text-muted);">— Select an Event —</option>
+            </select>
+            <i class="fa-solid fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color: var(--gold); pointer-events:none; font-size:11px;"></i>
+          </div>
+          <button id="btn-event-report" class="btn" onclick="generateEventReport()"
+            style="
+              background: linear-gradient(135deg, #f59e0b, #d97706);
+              color: #0d0e12;
+              border: none;
+              font-weight: 700;
+              letter-spacing: 0.3px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              white-space: nowrap;
+              box-shadow: 0 0 18px rgba(245,158,11,0.35);
+              transition: all 0.2s;
+            "
+            onmouseover="this.style.boxShadow='0 0 28px rgba(245,158,11,0.6)'; this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.boxShadow='0 0 18px rgba(245,158,11,0.35)'; this.style.transform='translateY(0)'">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Event Report
+          </button>
+        </div>
+        <div id="event-select-error" style="color: var(--rose); font-size:12px; margin-top:8px; display:none;">
+          ⚠ Please select an event first.
+        </div>
       </div>
 
       <!-- AI Console output -->
@@ -76,7 +135,7 @@
     </div>
   </div>
 
-  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
   <script>
     let typingInterval = null;
 
@@ -89,6 +148,8 @@
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
         // Bold
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Horizontal rule
+        .replace(/^---$/gim, '<hr>')
         // Bullet lists
         .replace(/^\- (.*$)/gim, '<li>$1</li>');
 
@@ -178,6 +239,81 @@
         termContent.innerHTML = `<span style="color: var(--rose);">[ERROR] System was unable to process LLM request. Verify backend connection is active.</span>`;
       }
     }
+
+    async function generateEventReport() {
+      const select = document.getElementById('event-select');
+      const errorEl = document.getElementById('event-select-error');
+      const eventId = select.value;
+
+      if (!eventId) {
+        errorEl.style.display = 'block';
+        setTimeout(() => errorEl.style.display = 'none', 3000);
+        return;
+      }
+      errorEl.style.display = 'none';
+
+      const selectedEventName = select.options[select.selectedIndex].text;
+      const termContent = document.getElementById('terminal-content');
+      const cursor = document.getElementById('cursor');
+
+      termContent.innerHTML = '';
+      cursor.style.display = 'inline-block';
+
+      document.querySelector('#terminal-screen .ai-terminal-prompt').textContent =
+        `guest@clubpulse:~# curl -X POST /api/ai/event-report -d '{"eventId":"${eventId}"}'\nFetching event data for: ${selectedEventName}...\nAggregating team registrations and attendance records...\nRunning AI performance analysis...`;
+
+      try {
+        const res = await fetch('/api/ai/event-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Unknown error');
+
+        const htmlReport = formatMarkdown(data.report);
+        typeEffect(termContent, htmlReport);
+      } catch (err) {
+        cursor.style.display = 'none';
+        termContent.innerHTML = `<span style="color: var(--rose);">[ERROR] ${err.message || 'Could not generate event report. Check backend connection.'}</span>`;
+      }
+    }
+
+    // Populate event dropdown on page load
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        const events = await res.json();
+        const select = document.getElementById('event-select');
+
+        if (!events || events.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.disabled = true;
+          opt.textContent = 'No events found in database';
+          opt.style.background = '#1a1c24';
+          select.appendChild(opt);
+          return;
+        }
+
+        events.forEach(ev => {
+          const opt = document.createElement('option');
+          opt.value = ev._id;
+          const dateStr = ev.date
+            ? new Date(ev.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+            : '';
+          const statusBadge = ev.status === 'completed' ? '✅' : ev.status === 'ongoing' ? '🟡' : '🔵';
+          opt.textContent = `${statusBadge} ${ev.title}${dateStr ? ' · ' + dateStr : ''}`;
+          opt.style.background = '#1a1c24';
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn('Could not load events for dropdown:', e);
+      }
+    }
+
+    loadEvents();
   </script>
 </body>
 </html>

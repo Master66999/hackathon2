@@ -11,9 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Inject Sidebar and Header HTML Shell
   const appContainer = document.querySelector('.app-container');
   if (appContainer) {
-    // Determine active menu item
     const path = window.location.pathname;
     const pageName = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+    // Get current user info
+    const user = window.AuthHelper ? window.AuthHelper.getUser() : null;
+    const userName = user ? user.name : 'Admin';
+    const userClub = user ? (user.clubName || 'My Club') : 'ClubPulse';
+    const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
     // Create Sidebar
     const sidebar = document.createElement('aside');
@@ -78,9 +83,20 @@ document.addEventListener('DOMContentLoaded', () => {
           </a>
         </li>
       </ul>
-      <div class="sidebar-footer">
-        <div>ClubPulse v1.0.0</div>
-        <div style="font-size: 10px; margin-top: 4px;">Developer Workspace</div>
+      <div class="sidebar-footer" style="padding: 16px 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid var(--border-color);">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--mint)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #090a0f; flex-shrink: 0;">
+            ${userInitials}
+          </div>
+          <div style="overflow: hidden; flex: 1;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${userName}</div>
+            <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${userClub}</div>
+          </div>
+        </div>
+        <button onclick="if(window.AuthHelper) window.AuthHelper.logout()" style="width: 100%; background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.2); color: var(--rose); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.15)'; this.style.borderColor='var(--rose)'" onmouseout="this.style.background='rgba(244,63,94,0.08)'; this.style.borderColor='rgba(244,63,94,0.2)'">
+          <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+        </button>
+        <div style="font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 10px;">ClubPulse v2.0 · Auth Edition</div>
       </div>
     `;
 
@@ -89,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!mainContent) {
       mainContent = document.createElement('div');
       mainContent.className = 'main-content';
-      // Move all current body children (excluding sidebar) to mainContent
       while (appContainer.firstChild) {
         mainContent.appendChild(appContainer.firstChild);
       }
@@ -105,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
       topHeader = document.createElement('header');
       topHeader.className = 'top-header';
       
-      // Get title from page document metadata or determine from filename
       let documentTitle = document.title.replace('ClubPulse - ', '');
       if (documentTitle === 'Document' || !documentTitle) {
         const titleMap = {
@@ -148,10 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Close mobile sidebar if clicking outside of it
     document.addEventListener('click', (e) => {
       if (window.innerWidth <= 1024 && sidebar.classList.contains('active')) {
-        if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+        if (!sidebar.contains(e.target) && menuToggle && !menuToggle.contains(e.target)) {
           sidebar.classList.remove('active');
         }
       }
@@ -173,22 +186,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = document.getElementById('db-status-text');
     if (badge && text) {
       fetch('/api/status')
-        .then(res => {
-          if (!res.ok) throw new Error();
-          return res.json();
-        })
+        .then(res => { if (!res.ok) throw new Error(); return res.json(); })
         .then(data => {
           if (data.databaseConnected) {
             badge.className = 'db-status';
             text.textContent = 'MongoDB Online';
           } else if (data.useMockFallback) {
             badge.className = 'db-status offline';
-            text.textContent = 'Mock DB Offline Mode';
+            text.textContent = 'Mock DB Mode';
           }
         })
         .catch(() => {
           badge.className = 'db-status offline';
-          text.textContent = 'API Connection Error';
+          text.textContent = 'API Error';
         });
     }
   }

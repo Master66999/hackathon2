@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const problemStatementSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
   category: { type: String, enum: ['AI/ML', 'Web Dev', 'Web3', 'App Dev'], required: true },

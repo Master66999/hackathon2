@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse — Create Account</title>
+  <meta name="description" content="Create your free ClubPulse account and start managing your hackathon club.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #050608;
+      --card: rgba(13,15,24,0.88);
+      --border: rgba(255,255,255,0.08);
+      --mint: #00ffcc;
+      --violet: #a855f7;
+      --gold: #fbbf24;
+      --rose: #f43f5e;
+      --text: #f8fafc;
+      --muted: #64748b;
+      --input-bg: rgba(255,255,255,0.04);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 600px; height: 600px; background: rgba(0,255,204,0.07); top: -150px; right: -100px; animation: orbF1 10s ease-in-out infinite alternate; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(168,85,247,0.1); bottom: -100px; left: -100px; animation: orbF2 8s ease-in-out infinite alternate; }
+    @keyframes orbF1 { from { transform: translate(0,0); } to { transform: translate(-50px,50px); } }
+    @keyframes orbF2 { from { transform: translate(0,0); } to { transform: translate(50px,-40px); } }
+
+    .auth-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 480px;
+    }
+    .auth-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 44px 40px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,255,204,0.05);
+      animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--mint), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 28px;
+      text-decoration: none;
+    }
+
+    .auth-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin-bottom: 6px; }
+    .auth-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+
+    /* Two-col grid for name+club */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } .auth-card { padding: 32px 24px; } }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .input-wrapper { position: relative; }
+    .input-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; transition: color 0.2s; pointer-events: none; }
+    .form-control {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 12px 14px 12px 38px;
+      font-size: 14px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-control::placeholder { color: var(--muted); }
+    .form-control:focus { border-color: var(--mint); background: rgba(0,255,204,0.04); box-shadow: 0 0 0 3px rgba(0,255,204,0.12); }
+    .input-wrapper:focus-within .input-icon { color: var(--mint); }
+
+    .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--muted); font-size: 13px; background: none; border: none; padding: 4px; transition: color 0.2s; }
+    .password-toggle:hover { color: var(--text); }
+
+    /* Strength bar */
+    .strength-bar-wrap { margin-top: 8px; display: flex; gap: 4px; }
+    .strength-seg { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.08); transition: background 0.3s; }
+    .strength-label { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, var(--mint), #00d4aa);
+      color: #050608;
+      box-shadow: 0 4px 20px rgba(0,255,204,0.3);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,255,204,0.5); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-submit .spinner { width: 18px; height: 18px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #050608; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 18px; display: none; align-items: center; gap: 10px; }
+    .alert.show { display: flex; }
+    .alert-error { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.25); color: #f87171; }
+    .alert-success { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.2); color: var(--mint); }
+
+    /* Features checklist */
+    .perks {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 28px;
+      padding: 16px;
+      background: rgba(0,255,204,0.03);
+      border: 1px solid rgba(0,255,204,0.1);
+      border-radius: 12px;
+    }
+    .perk { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #94a3b8; }
+    .perk i { color: var(--mint); font-size: 12px; flex-shrink: 0; }
+
+    .auth-footer { text-align: center; font-size: 13px; color: var(--muted); margin-top: 20px; }
+    .auth-footer a { color: var(--violet); text-decoration: none; font-weight: 600; }
+    .auth-footer a:hover { color: var(--mint); }
+
+    .back-link { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.2s; }
+    .back-link:hover { color: var(--text); }
+
+    .terms { font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="auth-wrapper">
+    <a href="landing.html" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i> Back to Home
+    </a>
+
+    <div class="auth-card">
+      <a href="landing.html" class="brand">
+        <i class="fa-solid fa-bolt-lightning"></i> ClubPulse
+      </a>
+
+      <h1 class="auth-title">Create your account</h1>
+      <p class="auth-sub">Your club dashboard is seconds away — free forever.</p>
+
+      <!-- What you get -->
+      <div class="perks">
+        <div class="perk"><i class="fa-solid fa-check-circle"></i> Full dashboard with members, events & teams</div>
+        <div class="perk"><i class="fa-solid fa-check-circle"></i> AI-powered reports & task scheduling</div>
+        <div class="perk"><i class="fa-solid fa-check-circle"></i> QR code attendance scanner included</div>
+        <div class="perk"><i class="fa-solid fa-check-circle"></i> Your data stays 100% private & isolated</div>
+      </div>
+
+      <div class="alert" id="alert-box">
+        <i class="fa-solid fa-circle-exclamation" id="alert-icon"></i>
+        <span id="alert-msg"></span>
+      </div>
+
+      <form id="signup-form" autocomplete="on">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="name" name="name" class="form-control" placeholder="Alex Rivera" autocomplete="name" required>
+              <i class="fa-solid fa-user input-icon"></i>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="clubName">Club Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="clubName" name="clubName" class="form-control" placeholder="CodeCraft Club" autocomplete="organization" required>
+              <i class="fa-solid fa-bolt-lightning input-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <div class="input-wrapper">
+            <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" autocomplete="email" required>
+            <i class="fa-solid fa-envelope input-icon"></i>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 characters" autocomplete="new-password" required oninput="checkStrength(this.value)">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <button type="button" class="password-toggle" onclick="togglePwd('password','pwd-icon1')">
+              <i class="fa-solid fa-eye" id="pwd-icon1"></i>
+            </button>
+          </div>
+          <div class="strength-bar-wrap" id="strength-bar">
+            <div class="strength-seg" id="s1"></div>
+            <div class="strength-seg" id="s2"></div>
+            <div class="strength-seg" id="s3"></div>
+            <div class="strength-seg" id="s4"></div>
+          </div>
+          <div class="strength-label" id="strength-label"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm">Confirm Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="confirm" name="confirm" class="form-control" placeholder="Repeat password" autocomplete="new-password" required>
+            <i class="fa-solid fa-lock input-icon"></i>
+            <button type="button" class="password-toggle" onclick="togglePwd('confirm','pwd-icon2')">
+              <i class="fa-solid fa-eye" id="pwd-icon2"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submit-btn">
+          <i class="fa-solid fa-rocket"></i>
+          <span>Create My Club Dashboard</span>
+        </button>
+
+        <div class="terms">By creating an account, you agree to our Terms of Service and Privacy Policy.</div>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="login.html">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    const existingToken = localStorage.getItem('cp_token');
+    if (existingToken) {
+      try {
+        const p = JSON.parse(atob(existingToken.split('.')[1]));
+        if (p.exp * 1000 > Date.now()) window.location.href = 'index.html';
+      } catch {}
+    }
+
+    function togglePwd(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') { input.type = 'text'; icon.className = 'fa-solid fa-eye-slash'; }
+      else { input.type = 'password'; icon.className = 'fa-solid fa-eye'; }
+    }
+
+    function checkStrength(pwd) {
+      const segs = ['s1','s2','s3','s4'];
+      const label = document.getElementById('strength-label');
+      let score = 0;
+      if (pwd.length >= 6) score++;
+      if (pwd.length >= 10) score++;
+      if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) score++;
+      if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+      const colors = ['#f43f5e','#fbbf24','#3b82f6','#00ffcc'];
+      const labels = ['', 'Weak','Fair','Strong','Very Strong'];
+      segs.forEach((id, i) => {
+        document.getElementById(id).style.background = i < score ? colors[score - 1] : 'rgba(255,255,255,0.08)';
+      });
+      label.textContent = pwd.length > 0 ? labels[score] : '';
+      label.style.color = score > 0 ? colors[score - 1] : 'var(--muted)';
+    }
+
+    function showAlert(msg, type = 'error') {
+      const box = document.getElementById('alert-box');
+      const icon = document.getElementById('alert-icon');
+      document.getElementById('alert-msg').textContent = msg;
+      box.className = `alert alert-${type} show`;
+      icon.className = type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-check-circle';
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = loading;
+      btn.innerHTML = loading
+        ? `<div class="spinner"></div><span>Creating account...</span>`
+        : `<i class="fa-solid fa-rocket"></i><span>Create My Club Dashboard</span>`;
+    }
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const clubName = document.getElementById('clubName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+
+      if (!name || !clubName || !email || !password) { showAlert('Please fill in all fields.'); return; }
+      if (password.length < 6) { showAlert('Password must be at least 6 characters.'); return; }
+      if (password !== confirm) { showAlert('Passwords do not match.'); return; }
+
+      setLoading(true);
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, clubName })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showAlert(data.error || 'Signup failed. Please try again.');
+          setLoading(false);
+          return;
+        }
+
+        // Save session
+        localStorage.setItem('cp_token', data.token);
+        localStorage.setItem('cp_user', JSON.stringify(data.user));
+
+        showAlert(`🎉 Welcome, ${data.user.name}! Your dashboard is ready. Redirecting...`, 'success');
+        setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+      } catch (err) {
+        showAlert('Network error. Is the server running?');
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
