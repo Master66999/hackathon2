@@ -23,9 +23,11 @@ async function check() {
 
   const members = await db.collection('members').find({}).toArray();
   console.log('--- MEMBERS ---', members.length);
+  console.log(members);
 
   const teams = await db.collection('teams').find({}).toArray();
   console.log('--- TEAMS ---', teams.length);
+  console.log(teams);
 
   await mongoose.disconnect();
   console.log('Disconnected');

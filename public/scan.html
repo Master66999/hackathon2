@@ -7,71 +7,300 @@
   <link rel="stylesheet" href="css/style.css">
   <!-- HTML5 QR Code CDN -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    .scanner-grid {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .scanner-grid { grid-template-columns: 1fr; }
+    }
+
+    .scan-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    .stat-block .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--mint);
+    }
+
+    .stat-block .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .scan-log-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      transition: all 0.2s;
+    }
+
+    .scan-log-row:hover {
+      border-color: var(--mint-glow);
+      background: var(--bg-card-hover);
+    }
+
+    .scan-log-row.success-row {
+      border-left: 3px solid var(--mint);
+    }
+
+    .scan-log-row.error-row {
+      border-left: 3px solid var(--rose);
+    }
+
+    .scan-log-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .scan-log-icon.success {
+      background: rgba(22, 163, 74, 0.1);
+      color: var(--mint);
+      border: 1px solid var(--mint-glow);
+    }
+
+    .scan-log-icon.error {
+      background: rgba(220, 38, 38, 0.08);
+      color: var(--rose);
+      border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .scan-log-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .scan-log-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .scan-log-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .scan-log-time {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .scan-log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 440px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .scan-empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .pulse-ring {
+      position: relative;
+      display: inline-flex;
+    }
+    .pulse-ring::after {
+      content: '';
+      position: absolute;
+      top: -4px; left: -4px; right: -4px; bottom: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--mint);
+      animation: pulse-ring 1.5s ease-out infinite;
+      opacity: 0;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    #scan-status-alert {
+      padding: 14px 18px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      text-align: center;
+      margin-bottom: 18px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+  </style>
 </head>
 <body>
   <div class="app-container">
     <div class="content-body">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start;">
-        <!-- Scanner panel -->
-        <div class="card">
-          <div class="card-title">
-            <span>Live Camera Feed</span>
-            <i class="fa-solid fa-camera" style="color: var(--violet);"></i>
-          </div>
-          
-          <div style="margin-bottom: 16px;">
-            <label for="camera-select" style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Choose Video Device</label>
-            <select id="camera-select" class="form-control" onchange="startScanner()">
-              <option value="">Detecting cameras...</option>
-            </select>
+
+      <!-- Stats Summary Bar -->
+      <div class="scan-stats">
+        <div class="stat-block">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total Scans Today</div>
+        </div>
+        <div class="stat-block" style="border-color: var(--mint-glow);">
+          <div class="stat-value" id="stat-success" style="color: var(--mint);">0</div>
+          <div class="stat-label">Successful Check-ins</div>
+        </div>
+        <div class="stat-block" style="border-color: rgba(220, 38, 38, 0.2);">
+          <div class="stat-value" id="stat-failed" style="color: var(--rose);">0</div>
+          <div class="stat-label">Failed Attempts</div>
+        </div>
+      </div>
+
+      <div class="scanner-grid">
+        <!-- LEFT: Scanner Panel -->
+        <div>
+          <div class="card" style="padding: 20px;">
+            <div class="card-title" style="margin-bottom: 16px;">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-camera" style="color: var(--violet);"></i> Live Camera Feed
+              </span>
+              <div id="live-dot" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); font-weight: 600;">
+                <div class="status-dot" id="cam-dot" style="background: var(--text-muted); width: 8px; height: 8px; border-radius: 50%;"></div>
+                <span id="cam-label">Idle</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label for="camera-select" style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">
+                <i class="fa-solid fa-video"></i> Select Video Device
+              </label>
+              <select id="camera-select" class="form-control" onchange="startScanner()">
+                <option value="">Detecting cameras...</option>
+              </select>
+            </div>
+
+            <div class="scanner-viewport">
+              <div class="scanner-laser" id="scanner-laser" style="display: none;"></div>
+              <div id="scanner-reader" style="width: 100%; height: 100%;"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" style="flex: 1;" onclick="startScanner()">
+                <i class="fa-solid fa-play"></i> Start Camera
+              </button>
+              <button class="btn btn-secondary" onclick="stopScanner()">
+                <i class="fa-solid fa-stop"></i> Stop
+              </button>
+            </div>
           </div>
 
-          <div class="scanner-viewport">
-            <div class="scanner-laser" id="scanner-laser" style="display: none;"></div>
-            <div id="scanner-reader" style="width: 100%; height: 100%;"></div>
-          </div>
-
-          <div style="display: flex; gap: 10px;">
-            <button class="btn btn-primary" style="flex: 1;" onclick="startScanner()">
-              <i class="fa-solid fa-play"></i> Start Camera
-            </button>
-            <button class="btn btn-secondary" onclick="stopScanner()">
-              <i class="fa-solid fa-stop"></i> Stop
+          <!-- Manual QR Paste Fallback -->
+          <div class="card" style="margin-top: 16px; padding: 20px;">
+            <div class="card-title" style="margin-bottom: 14px; font-size: 15px;">
+              <span><i class="fa-solid fa-keyboard" style="color: var(--gold);"></i> Manual QR Entry</span>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 6px; display: block;">
+                Paste QR JSON ticket data
+              </label>
+              <textarea id="manual-qr-input" class="form-control" rows="3"
+                placeholder='{"teamId":"...","eventId":"...","teamName":"...","eventName":"..."}'
+                style="font-family: var(--font-mono); font-size: 12px; resize: none;"></textarea>
+            </div>
+            <button class="btn btn-secondary" style="width: 100%;" onclick="processManualQR()">
+              <i class="fa-solid fa-clipboard-check"></i> Process Manual Entry
             </button>
           </div>
         </div>
 
-        <!-- Details verification panel -->
-        <div class="card">
-          <div class="card-title">
-            <span>Check-in Verification Log</span>
-            <i class="fa-solid fa-shield-check" style="color: var(--mint);"></i>
-          </div>
-          
-          <div id="scan-status-alert" style="padding: 16px; border-radius: 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); text-align: center; margin-bottom: 24px; font-weight: 600; font-size: 15px;">
-            <i class="fa-solid fa-circle-info" style="color: var(--violet); margin-right: 8px;"></i> Awaiting QR Scan...
+        <!-- RIGHT: Log Panel -->
+        <div>
+          <!-- Status Alert -->
+          <div id="scan-status-alert">
+            <i class="fa-solid fa-circle-info" style="color: var(--violet); margin-right: 8px;"></i>
+            Awaiting QR scan...
           </div>
 
-          <div id="checkin-details" style="display: none; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
-            <h4 style="color: var(--mint); margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-circle-check"></i> Checked-in Successfully
-            </h4>
-            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
-              <div>
-                <span style="color: var(--text-secondary);">Team Name:</span>
-                <strong id="detail-team-name" style="color: var(--text-primary); font-size: 15px;">-</strong>
+          <!-- Last Scan Details Card -->
+          <div id="last-scan-card" class="card" style="display: none; margin-bottom: 18px; border-color: var(--mint-glow); padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+              <div class="pulse-ring">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(22, 163, 74, 0.12); display: flex; align-items: center; justify-content: center; color: var(--mint); font-size: 18px; border: 1px solid var(--mint-glow);">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
               </div>
               <div>
-                <span style="color: var(--text-secondary);">Allocated Event:</span>
-                <strong id="detail-event-name" style="color: var(--text-primary); font-size: 14px;">-</strong>
+                <div style="font-size: 15px; font-weight: 700; color: var(--mint);">Check-in Successful!</div>
+                <div style="font-size: 11px; color: var(--text-muted);" id="last-scan-time">—</div>
               </div>
-              <div>
-                <span style="color: var(--text-secondary);">Database ID Reference:</span>
-                <span id="detail-team-id" style="font-family: var(--font-mono); color: var(--text-muted); font-size: 11px;">-</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+              <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">Team</div>
+                <div id="detail-team-name" style="font-weight: 700;">—</div>
               </div>
-              <div>
-                <span style="color: var(--text-secondary);">Check-in Timestamp:</span>
-                <span id="detail-time" style="color: var(--text-secondary); font-family: var(--font-mono);">00:00:00</span>
+              <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">Event</div>
+                <div id="detail-event-name" style="font-weight: 700;">—</div>
+              </div>
+            </div>
+            <div style="margin-top: 12px; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);">
+              ID: <span id="detail-team-id">—</span>
+            </div>
+          </div>
+
+          <!-- Attendance Log -->
+          <div class="card" style="padding: 20px;">
+            <div class="card-title" style="margin-bottom: 16px;">
+              <span><i class="fa-solid fa-list-check" style="color: var(--mint);"></i> Attendance Log</span>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="exportLog()">
+                  <i class="fa-solid fa-download"></i> Export CSV
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="clearLog()">
+                  <i class="fa-solid fa-trash"></i> Clear
+                </button>
+              </div>
+            </div>
+
+            <div id="scan-log-list" class="scan-log-list">
+              <div class="scan-empty">
+                <i class="fa-solid fa-qrcode" style="font-size: 32px; color: var(--border-color); display: block; margin-bottom: 12px;"></i>
+                No scans yet. Start the camera and scan a QR ticket.
               </div>
             </div>
           </div>
@@ -80,174 +309,286 @@
     </div>
   </div>
 
-  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
   <script>
     let html5QrCode = null;
-    let cameraDevices = [];
+    let scanLog = JSON.parse(localStorage.getItem('cp_scan_log') || '[]');
+    let statsTotal = 0, statsSuccess = 0, statsFailed = 0;
 
-    // Synthesize beep or buzz sounds using Web Audio API
+    // ──────────────────────────────────────────────────────
+    // Audio Feedback
+    // ──────────────────────────────────────────────────────
     function playBeep(success = true) {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const ctx = new AudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        
         osc.connect(gain);
         gain.connect(ctx.destination);
-        
         if (success) {
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch check-in beep
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
           gain.gain.setValueAtTime(0.1, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+          osc.start(); osc.stop(ctx.currentTime + 0.2);
         } else {
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(220, ctx.currentTime); // Low buzz failure
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
           gain.gain.setValueAtTime(0.12, ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.35);
+          osc.start(); osc.stop(ctx.currentTime + 0.35);
         }
-      } catch (err) {
-        console.warn('Audio device connection blocked beep.', err);
-      }
+      } catch (err) { /* silent */ }
     }
 
+    // ──────────────────────────────────────────────────────
+    // Camera Detection
+    // ──────────────────────────────────────────────────────
     async function detectCameras() {
       try {
         const devices = await Html5Qrcode.getCameras();
-        cameraDevices = devices;
         const select = document.getElementById('camera-select');
         select.innerHTML = '';
-        
         if (devices && devices.length > 0) {
-          devices.forEach((device, index) => {
-            select.innerHTML += `<option value="${device.id}">${device.label || `Camera ${index + 1}`}</option>`;
+          devices.forEach((device, i) => {
+            select.innerHTML += `<option value="${device.id}">${device.label || 'Camera ' + (i + 1)}</option>`;
           });
         } else {
           select.innerHTML = '<option value="">No cameras detected</option>';
         }
       } catch (err) {
-        console.error('Camera detection error:', err);
-        document.getElementById('camera-select').innerHTML = '<option value="">Permission Blocked</option>';
+        document.getElementById('camera-select').innerHTML = '<option value="">Camera permission blocked</option>';
       }
     }
 
+    // ──────────────────────────────────────────────────────
+    // Scanner Control
+    // ──────────────────────────────────────────────────────
     async function startScanner() {
       const cameraId = document.getElementById('camera-select').value;
-      if (!cameraId) {
-        alert('Please choose a camera source device.');
-        return;
-      }
-
-      if (html5QrCode) {
-        await stopScanner();
-      }
+      if (!cameraId) { alert('Please select a camera device.'); return; }
+      if (html5QrCode) await stopScanner();
 
       document.getElementById('scanner-laser').style.display = 'block';
-      const statusAlert = document.getElementById('scan-status-alert');
-      statusAlert.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--mint); margin-right: 8px;"></i> Camera Live. Scanning...';
-      statusAlert.style.borderColor = 'var(--mint-glow)';
-      statusAlert.style.background = 'rgba(0, 255, 204, 0.03)';
-      statusAlert.style.color = 'var(--mint)';
+      document.getElementById('cam-dot').style.background = '#22c55e';
+      document.getElementById('cam-label').textContent = 'Live';
 
-      html5QrCode = new Html5Qrcode("scanner-reader");
-      
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 }
-      };
+      setStatus('scanning');
 
+      html5QrCode = new Html5Qrcode('scanner-reader');
       try {
         await html5QrCode.start(
-          cameraId, 
-          config, 
-          async (decodedText, decodedResult) => {
-            console.log(`Scan detected: ${decodedText}`);
-            // Briefly pause scanner to avoid duplicate read spikes
+          cameraId,
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          async (decodedText) => {
             stopScanner();
-            handleCheckin(decodedText);
+            await handleCheckin(decodedText);
           },
-          (errorMessage) => {
-            // silent scanner verbose
-          }
+          () => { /* silent scan errors */ }
         );
       } catch (err) {
-        console.error('Failed to start scanner:', err);
-        statusAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: var(--rose); margin-right: 8px;"></i> Scanner initialization failed.';
-        statusAlert.style.borderColor = 'rgba(244, 63, 94, 0.2)';
-        statusAlert.style.background = 'rgba(244, 63, 94, 0.05)';
-        statusAlert.style.color = 'var(--rose)';
+        setStatus('error', 'Camera failed to start: ' + err.message);
+        document.getElementById('cam-dot').style.background = 'var(--rose)';
+        document.getElementById('cam-label').textContent = 'Error';
       }
     }
 
     async function stopScanner() {
       document.getElementById('scanner-laser').style.display = 'none';
+      document.getElementById('cam-dot').style.background = 'var(--text-muted)';
+      document.getElementById('cam-label').textContent = 'Idle';
       if (html5QrCode) {
-        try {
-          await html5QrCode.stop();
-          html5QrCode = null;
-        } catch (err) {
-          console.error('Failed to stop scanner:', err);
-        }
+        try { await html5QrCode.stop(); } catch (e) { /* ignore */ }
+        html5QrCode = null;
       }
     }
 
+    // ──────────────────────────────────────────────────────
+    // Status Alert
+    // ──────────────────────────────────────────────────────
+    function setStatus(type, message) {
+      const el = document.getElementById('scan-status-alert');
+      const configs = {
+        idle:     { icon: 'fa-circle-info',      color: 'var(--violet)',  bg: 'rgba(255,255,255,0.02)', border: 'var(--border-color)', text: 'Awaiting QR Scan...' },
+        scanning: { icon: 'fa-spinner fa-spin',   color: 'var(--mint)',    bg: 'rgba(22, 163, 74, 0.04)', border: 'var(--mint-glow)', text: 'Camera Live — Scanning for QR Code...' },
+        success:  { icon: 'fa-circle-check',      color: 'var(--mint)',    bg: 'rgba(22, 163, 74, 0.06)', border: 'var(--mint-glow)', text: message || 'Check-in Successful!' },
+        error:    { icon: 'fa-circle-xmark',      color: 'var(--rose)',    bg: 'rgba(220, 38, 38, 0.06)', border: 'rgba(220,38,38,0.25)', text: message || 'Scan Failed.' },
+        duplicate:{ icon: 'fa-triangle-exclamation', color: 'var(--gold)', bg: 'rgba(217, 119, 6, 0.06)', border: 'var(--gold-glow)', text: message || 'Already Checked In.' },
+      };
+      const cfg = configs[type] || configs.idle;
+      el.innerHTML = `<i class="fa-solid ${cfg.icon}" style="color:${cfg.color}; margin-right: 8px;"></i>${cfg.text}`;
+      el.style.background = cfg.bg;
+      el.style.borderColor = cfg.border;
+      el.style.color = type === 'idle' ? 'var(--text-secondary)' : cfg.color;
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Core Check-in Handler
+    // ──────────────────────────────────────────────────────
     async function handleCheckin(qrText) {
-      const statusAlert = document.getElementById('scan-status-alert');
-      const detailsBox = document.getElementById('checkin-details');
-      
+      statsTotal++;
+      updateStats();
+
       try {
-        const payload = JSON.parse(qrText);
-        
-        if (!payload.teamId || !payload.eventId) {
-          throw new Error('Malformed Ticket QR Data.');
+        let payload;
+        try { payload = JSON.parse(qrText); } catch {
+          throw new Error('Invalid QR format — expected JSON');
         }
 
-        // Post check-in attendance
+        if (!payload.teamId || !payload.eventId) {
+          throw new Error('QR missing teamId or eventId fields');
+        }
+
         const res = await fetch(`/api/teams/${payload.teamId}/attend`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ eventId: payload.eventId })
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Check-in failed');
-        }
-
         const data = await res.json();
-        
-        // Success
-        playBeep(true);
-        statusAlert.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--mint); margin-right: 8px;"></i> Scan Verified Successfully!';
-        statusAlert.style.borderColor = 'var(--mint-glow)';
-        statusAlert.style.background = 'rgba(0, 255, 204, 0.08)';
-        statusAlert.style.color = 'var(--mint)';
 
-        // Render card
-        document.getElementById('detail-team-name').textContent = payload.teamName || data.team.name;
-        document.getElementById('detail-event-name').textContent = payload.eventName || 'Registered Event';
-        document.getElementById('detail-team-id').textContent = payload.teamId;
-        document.getElementById('detail-time').textContent = new Date().toLocaleTimeString();
-        detailsBox.style.display = 'block';
+        if (!res.ok) throw new Error(data.error || 'Server returned error');
+
+        // SUCCESS
+        statsSuccess++;
+        updateStats();
+        playBeep(true);
+        setStatus('success', `✅ Team "${payload.teamName || data.team?.name}" checked in!`);
+        showLastScanCard(payload, data);
+        addLogEntry({ success: true, teamName: payload.teamName || data.team?.name, eventName: payload.eventName || '—', teamId: payload.teamId });
 
       } catch (err) {
-        // Failure
+        statsFailed++;
+        updateStats();
         playBeep(false);
-        statusAlert.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: var(--rose); margin-right: 8px;"></i> Error: ${err.message}`;
-        statusAlert.style.borderColor = 'rgba(244, 63, 94, 0.2)';
-        statusAlert.style.background = 'rgba(244, 63, 94, 0.08)';
-        statusAlert.style.color = 'var(--rose)';
-        detailsBox.style.display = 'none';
+        setStatus('error', err.message);
+        addLogEntry({ success: false, teamName: '—', eventName: '—', teamId: '—', error: err.message });
+        document.getElementById('last-scan-card').style.display = 'none';
       }
+
+      // Reset status after 5s and allow next scan
+      setTimeout(() => {
+        setStatus('idle');
+      }, 5000);
     }
 
+    // ──────────────────────────────────────────────────────
+    // Manual Entry Processor
+    // ──────────────────────────────────────────────────────
+    async function processManualQR() {
+      const raw = document.getElementById('manual-qr-input').value.trim();
+      if (!raw) { alert('Please paste your QR ticket JSON data first.'); return; }
+      document.getElementById('manual-qr-input').value = '';
+      await handleCheckin(raw);
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Last Scan Detail Card
+    // ──────────────────────────────────────────────────────
+    function showLastScanCard(payload, data) {
+      const card = document.getElementById('last-scan-card');
+      card.style.display = 'block';
+      document.getElementById('detail-team-name').textContent = payload.teamName || data.team?.name || '—';
+      document.getElementById('detail-event-name').textContent = payload.eventName || '—';
+      document.getElementById('detail-team-id').textContent = payload.teamId;
+      document.getElementById('last-scan-time').textContent = new Date().toLocaleString();
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Scan Log
+    // ──────────────────────────────────────────────────────
+    function addLogEntry(entry) {
+      entry.time = new Date().toISOString();
+      scanLog.unshift(entry);
+      localStorage.setItem('cp_scan_log', JSON.stringify(scanLog.slice(0, 200)));
+      renderLog();
+    }
+
+    function renderLog() {
+      const list = document.getElementById('scan-log-list');
+      if (scanLog.length === 0) {
+        list.innerHTML = `<div class="scan-empty">
+          <i class="fa-solid fa-qrcode" style="font-size: 32px; color: var(--border-color); display: block; margin-bottom: 12px;"></i>
+          No scans yet.
+        </div>`;
+        return;
+      }
+
+      list.innerHTML = scanLog.map(entry => {
+        const time = new Date(entry.time);
+        const timeStr = time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateStr = time.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+        return `<div class="scan-log-row ${entry.success ? 'success-row' : 'error-row'}">
+          <div class="scan-log-icon ${entry.success ? 'success' : 'error'}">
+            <i class="fa-solid ${entry.success ? 'fa-check' : 'fa-xmark'}"></i>
+          </div>
+          <div class="scan-log-body">
+            <div class="scan-log-title">${entry.teamName}</div>
+            <div class="scan-log-sub">
+              ${entry.success
+                ? `Event: <strong>${entry.eventName}</strong>`
+                : `Error: ${entry.error || 'Unknown error'}`}
+            </div>
+          </div>
+          <div class="scan-log-time">${dateStr}<br>${timeStr}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function clearLog() {
+      if (!confirm('Clear all scan logs?')) return;
+      scanLog = [];
+      statsTotal = 0; statsSuccess = 0; statsFailed = 0;
+      localStorage.removeItem('cp_scan_log');
+      updateStats();
+      renderLog();
+      setStatus('idle');
+      document.getElementById('last-scan-card').style.display = 'none';
+    }
+
+    function exportLog() {
+      if (scanLog.length === 0) { alert('No logs to export.'); return; }
+      const headers = ['Time', 'Status', 'Team Name', 'Event Name', 'Team ID', 'Error'];
+      const rows = scanLog.map(e => [
+        new Date(e.time).toLocaleString(),
+        e.success ? 'SUCCESS' : 'FAILED',
+        e.teamName || '',
+        e.eventName || '',
+        e.teamId || '',
+        e.error || ''
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `attendance_log_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Stats Update
+    // ──────────────────────────────────────────────────────
+    function updateStats() {
+      document.getElementById('stat-total').textContent = statsTotal;
+      document.getElementById('stat-success').textContent = statsSuccess;
+      document.getElementById('stat-failed').textContent = statsFailed;
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Init
+    // ──────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
       detectCameras();
+      renderLog(); // render any persisted logs
+      // Rebuild stats from persisted log
+      scanLog.forEach(e => {
+        statsTotal++;
+        if (e.success) statsSuccess++; else statsFailed++;
+      });
+      updateStats();
     });
   </script>
 </body>

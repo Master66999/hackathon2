@@ -41,6 +41,30 @@
           </table>
         </div>
       </div>
+
+      <!-- Teams / Participants Section -->
+      <div class="card" style="margin-top: 32px; padding: 24px;">
+        <div class="card-title">
+          <span><i class="fa-solid fa-people-group" style="color: var(--violet); margin-right: 8px;"></i> Registered Team Participants</span>
+          <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Import event participants directly into your club roster</div>
+        </div>
+        <div class="table-responsive" style="margin-top: 16px;">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Participant</th>
+                <th>Role in Team</th>
+                <th>Team Context</th>
+                <th>Status in Club</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="teams-import-table-body">
+              <!-- Loaded dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -105,7 +129,8 @@
     </div>
   </div>
 
-  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
   <script>
     let allMembers = [];
     let currentFilter = 'all';
@@ -222,6 +247,120 @@
       }
     }
 
+    async function loadTeamsForImport() {
+      const tbody = document.getElementById('teams-import-table-body');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading participants...</td></tr>';
+      try {
+        const res = await fetch('/api/teams');
+        const teams = await res.json();
+        
+        const membersRes = await fetch('/api/members');
+        const existingMembers = await membersRes.json();
+        const memberEmails = new Set(existingMembers.map(m => m.email.toLowerCase()));
+
+        tbody.innerHTML = '';
+        let rowCount = 0;
+
+        teams.forEach(team => {
+          // Process Leader
+          const leaderEmail = team.leaderEmail.toLowerCase();
+          const isLeaderMember = memberEmails.has(leaderEmail);
+          
+          tbody.innerHTML += `
+            <tr>
+              <td>
+                <div style="font-weight: 600; font-size: 14px;">${team.leaderName}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">${team.leaderEmail}</div>
+              </td>
+              <td><span style="font-weight: 500; font-size: 13px;">Team Leader</span></td>
+              <td><span style="font-weight: 500; font-size: 13px; color: var(--mint);">${team.name}</span></td>
+              <td>
+                <span class="badge ${isLeaderMember ? 'badge-active' : 'badge-inactive'}">
+                  ${isLeaderMember ? 'Club Member' : 'Not Imported'}
+                </span>
+              </td>
+              <td style="text-align: right;">
+                ${isLeaderMember 
+                  ? `<button class="btn btn-secondary btn-sm" disabled style="opacity: 0.6; cursor: not-allowed;"><i class="fa-solid fa-check"></i> Imported</button>`
+                  : `<button class="btn btn-mint btn-sm" onclick="importTeamMember('${team.leaderName.replace(/'/g, "\\'")}', '${team.leaderEmail.replace(/'/g, "\\'")}', 'Organizer')"><i class="fa-solid fa-file-import"></i> Import</button>`
+                }
+              </td>
+            </tr>
+          `;
+          rowCount++;
+
+          // Process Members
+          if (team.members && Array.isArray(team.members)) {
+            team.members.forEach(m => {
+              const mEmail = m.email.toLowerCase();
+              const isMember = memberEmails.has(mEmail);
+              
+              tbody.innerHTML += `
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; font-size: 14px;">${m.name}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">${m.email}</div>
+                  </td>
+                  <td><span style="font-weight: 500; font-size: 13px;">Team Member</span></td>
+                  <td><span style="font-weight: 500; font-size: 13px; color: var(--text-muted);">${team.name}</span></td>
+                  <td>
+                    <span class="badge ${isMember ? 'badge-active' : 'badge-inactive'}">
+                      ${isMember ? 'Club Member' : 'Not Imported'}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    ${isMember 
+                      ? `<button class="btn btn-secondary btn-sm" disabled style="opacity: 0.6; cursor: not-allowed;"><i class="fa-solid fa-check"></i> Imported</button>`
+                      : `<button class="btn btn-mint btn-sm" onclick="importTeamMember('${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}', 'Member')"><i class="fa-solid fa-file-import"></i> Import</button>`
+                    }
+                  </td>
+                </tr>
+              `;
+              rowCount++;
+            });
+          }
+        });
+
+        if (rowCount === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">No registered team participants found.</td></tr>';
+        }
+      } catch (err) {
+        console.error('Error loading team imports:', err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--rose); padding: 20px;">Failed to load team data.</td></tr>';
+      }
+    }
+
+    async function importTeamMember(name, email, defaultRole) {
+      try {
+        const payload = {
+          name,
+          email,
+          role: defaultRole,
+          status: 'active',
+          completedTasks: 0,
+          engagementScore: 10
+        };
+
+        const res = await fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Failed to import member.');
+          return;
+        }
+
+        // Refresh both tables
+        loadMembers();
+        loadTeamsForImport();
+      } catch (err) {
+        console.error('Error importing member:', err);
+      }
+    }
+
     function openMemberModal(member = null) {
       const modal = document.getElementById('member-modal');
       const form = document.getElementById('member-form');
@@ -291,6 +430,7 @@
 
         closeMemberModal();
         loadMembers();
+        loadTeamsForImport();
       } catch (err) {
         console.error('Error saving member:', err);
       }
@@ -302,6 +442,7 @@
         const res = await fetch(`/api/members/${id}`, { method: 'DELETE' });
         if (res.ok) {
           loadMembers();
+          loadTeamsForImport();
         } else {
           alert('Failed to delete member.');
         }
@@ -310,7 +451,10 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadMembers);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMembers();
+      loadTeamsForImport();
+    });
   </script>
 </body>
 </html>
