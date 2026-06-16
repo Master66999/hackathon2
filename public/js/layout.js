@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </ul>
       <div class="sidebar-footer" style="padding: 16px 20px;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid var(--border-color);">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--mint)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #090a0f; flex-shrink: 0;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--mint)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #06070a; flex-shrink: 0;">
             ${userInitials}
           </div>
           <div style="overflow: hidden; flex: 1;">
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${userClub}</div>
           </div>
         </div>
-        <button onclick="if(window.AuthHelper) window.AuthHelper.logout()" style="width: 100%; background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.2); color: var(--rose); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.15)'; this.style.borderColor='var(--rose)'" onmouseout="this.style.background='rgba(244,63,94,0.08)'; this.style.borderColor='rgba(244,63,94,0.2)'">
+        <button onclick="if(window.AuthHelper) window.AuthHelper.logout()" style="width: 100%; background: rgba(255,51,102,0.08); border: 1px solid rgba(255,51,102,0.2); color: var(--rose); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,51,102,0.15)'; this.style.borderColor='var(--rose)'" onmouseout="this.style.background='rgba(255,51,102,0.08)'; this.style.borderColor='rgba(255,51,102,0.2)'">
           <i class="fa-solid fa-right-from-bracket"></i> Sign Out
         </button>
         <div style="font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 10px;">ClubPulse v2.0 · Auth Edition</div>
