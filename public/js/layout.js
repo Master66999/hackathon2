@@ -48,9 +48,19 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-people-group"></i> Teams
           </a>
         </li>
+        <li class="sidebar-menu-item ${pageName === 'matchmaker.html' ? 'active' : ''}">
+          <a href="matchmaker.html">
+            <i class="fa-solid fa-people-arrows"></i> AI Matchmaker
+          </a>
+        </li>
         <li class="sidebar-menu-item ${pageName === 'problems.html' ? 'active' : ''}">
           <a href="problems.html">
             <i class="fa-solid fa-code"></i> Problems
+          </a>
+        </li>
+        <li class="sidebar-menu-item ${pageName === 'attendance.html' ? 'active' : ''}">
+          <a href="attendance.html">
+            <i class="fa-solid fa-clipboard-user"></i> Attendance
           </a>
         </li>
         <li class="sidebar-menu-item ${pageName === 'analytics.html' ? 'active' : ''}">
@@ -132,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'members.html': 'Members Management',
           'events.html': 'Events & Meetings',
           'participants.html': 'Teams & Participants',
+          'matchmaker.html': 'AI Team Matchmaker',
           'problems.html': 'Hackathon Problems',
           'analytics.html': 'Analytics Hub',
           'reports.html': 'AI Reports & Forecasts',

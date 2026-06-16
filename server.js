@@ -449,30 +449,44 @@ app.put('/api/teams/:id/grade', authenticateToken, async (req, res) => {
     res.json({ message: 'Team performance graded successfully', team: updated });
   } catch (error) { res.status(400).json({ error: error.message }); }
 });
-
 app.post('/api/teams/:id/attend', async (req, res) => {
   try {
-    const { eventId } = req.body;
+    const { eventId, remove } = req.body;
     const team = await db.Team.findById(req.params.id);
     if (!team) return res.status(404).json({ error: 'Team not found' });
     const event = await db.Event.findById(eventId);
     if (!event) return res.status(404).json({ error: 'Event not found' });
 
     if (!team.attendedEvents) team.attendedEvents = [];
-    if (!team.attendedEvents.map(id => id.toString()).includes(eventId.toString())) {
-      team.attendedEvents.push(eventId);
-      await db.Team.findByIdAndUpdate(team._id, { attendedEvents: team.attendedEvents });
-      const leaderMember = await db.Member.findOne({ email: team.leaderEmail, userId: event.userId });
-      if (leaderMember) {
-        await db.Member.findByIdAndUpdate(leaderMember._id, {
-          engagementScore: (leaderMember.engagementScore || 0) + 20
-        });
+    const isAlreadyAttended = team.attendedEvents.map(id => id.toString()).includes(eventId.toString());
+
+    if (remove) {
+      if (isAlreadyAttended) {
+        team.attendedEvents = team.attendedEvents.filter(id => id.toString() !== eventId.toString());
+        await db.Team.findByIdAndUpdate(team._id, { attendedEvents: team.attendedEvents });
+        const leaderMember = await db.Member.findOne({ email: team.leaderEmail, userId: event.userId });
+        if (leaderMember) {
+          await db.Member.findByIdAndUpdate(leaderMember._id, {
+            engagementScore: Math.max(0, (leaderMember.engagementScore || 0) - 20)
+          });
+        }
       }
+      res.json({ message: 'Team attendance removed successfully', team });
+    } else {
+      if (!isAlreadyAttended) {
+        team.attendedEvents.push(eventId);
+        await db.Team.findByIdAndUpdate(team._id, { attendedEvents: team.attendedEvents });
+        const leaderMember = await db.Member.findOne({ email: team.leaderEmail, userId: event.userId });
+        if (leaderMember) {
+          await db.Member.findByIdAndUpdate(leaderMember._id, {
+            engagementScore: (leaderMember.engagementScore || 0) + 20
+          });
+        }
+      }
+      res.json({ message: 'Team attendance recorded successfully', team });
     }
-    res.json({ message: 'Team attendance recorded successfully', team });
   } catch (error) { res.status(400).json({ error: error.message }); }
 });
-
 // 6. Problem Statements
 app.get('/api/problems', authenticateToken, async (req, res) => {
   try {
@@ -796,6 +810,159 @@ How can I help you succeed today?`;
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// ==========================================
+// SOLO REGISTRATION & AI MATCHMAKING ROUTES
+// ==========================================
+
+// GET /api/solo-registrants (Admin only)
+app.get('/api/solo-registrants', authenticateToken, async (req, res) => {
+  try {
+    const registrants = await db.SoloRegistrant.find({ userId: req.userId }).populate('registeredEvent');
+    res.json(registrants);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// POST /api/public/solo-registrants (Public)
+app.post('/api/public/solo-registrants', async (req, res) => {
+  try {
+    const { name, email, skills, interests, registeredEvent } = req.body;
+    const event = await db.Event.findById(registeredEvent);
+    if (!event) return res.status(404).json({ error: 'Target Event not found' });
+
+    const newSolo = await db.SoloRegistrant.create({
+      name, email,
+      skills: skills || [],
+      interests: interests || [],
+      registeredEvent,
+      matchedTeam: null,
+      userId: event.userId // Inherit userId from event
+    });
+    res.status(201).json({ message: 'Solo registration successful', solo: newSolo });
+  } catch (error) { res.status(400).json({ error: error.message }); }
+});
+
+// DELETE /api/solo-registrants/:id (Admin only)
+app.delete('/api/solo-registrants/:id', authenticateToken, async (req, res) => {
+  try {
+    const deleted = await db.SoloRegistrant.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Solo registrant not found' });
+    res.json({ message: 'Solo registrant deleted successfully', solo: deleted });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// POST /api/solo-registrants/match (Admin only: Skill-based matchmaking suggestions)
+app.post('/api/solo-registrants/match', authenticateToken, async (req, res) => {
+  try {
+    const { eventId, targetTeamSize = 3 } = req.body;
+    if (!eventId) return res.status(400).json({ error: 'eventId is required' });
+
+    const unmatched = await db.SoloRegistrant.find({ userId: req.userId, registeredEvent: eventId, matchedTeam: null });
+    if (unmatched.length === 0) return res.json({ message: 'No unmatched solo registrants found for this event.', matches: [] });
+
+    // Local heuristic skill-balancing matchmaking algorithm
+    const pool = [...unmatched];
+    const suggestions = [];
+    let groupIndex = 1;
+
+    while (pool.length > 0) {
+      const currentTeam = [];
+      const leader = pool.shift();
+      currentTeam.push(leader);
+
+      const existingSkills = new Set(leader.skills || []);
+
+      while (currentTeam.length < targetTeamSize && pool.length > 0) {
+        let bestCandidateIndex = -1;
+        let minimumOverlap = Infinity;
+
+        for (let i = 0; i < pool.length; i++) {
+          const candidate = pool[i];
+          let overlapCount = 0;
+          
+          (candidate.skills || []).forEach(skill => {
+            if (existingSkills.has(skill)) overlapCount++;
+          });
+
+          if (overlapCount < minimumOverlap) {
+            minimumOverlap = overlapCount;
+            bestCandidateIndex = i;
+          }
+        }
+
+        if (bestCandidateIndex !== -1) {
+          const member = pool.splice(bestCandidateIndex, 1)[0];
+          currentTeam.push(member);
+          (member.skills || []).forEach(skill => existingSkills.add(skill));
+        } else {
+          break;
+        }
+      }
+
+      suggestions.push({
+        id: `suggested-team-${groupIndex++}`,
+        name: `AI Match Team ${groupIndex - 1}`,
+        members: currentTeam
+      });
+    }
+
+    res.json({ message: `Suggested ${suggestions.length} team matchings.`, matches: suggestions });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// POST /api/solo-registrants/confirm-match (Admin only: Confirm preview suggestion and batch-create Teams)
+app.post('/api/solo-registrants/confirm-match', authenticateToken, async (req, res) => {
+  try {
+    const { eventId, matches } = req.body;
+    if (!eventId) return res.status(400).json({ error: 'eventId is required' });
+    if (!matches || !Array.isArray(matches) || matches.length === 0) return res.status(400).json({ error: 'Suggested matches are required' });
+
+    const event = await db.Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    const createdTeams = [];
+
+    for (const match of matches) {
+      if (!match.members || match.members.length === 0) continue;
+
+      const leader = match.members[0];
+      const otherMembers = match.members.slice(1).map(m => ({
+        name: m.name,
+        email: m.email
+      }));
+
+      // Create a Team record
+      const newTeam = await db.Team.create({
+        name: match.name || `Match Team ${Math.floor(Math.random() * 1000)}`,
+        leaderName: leader.name,
+        leaderEmail: leader.email,
+        members: otherMembers,
+        registeredEvent: eventId,
+        attendedEvents: [],
+        userId: req.userId
+      });
+
+      // Mark all matched solo registrants
+      for (const m of match.members) {
+        await db.SoloRegistrant.findByIdAndUpdate(m._id, { matchedTeam: newTeam._id });
+      }
+
+      // Generate Access QR Code pass
+      const qrData = JSON.stringify({ teamId: newTeam._id, eventId: event._id, teamName: newTeam.name, eventName: event.title });
+      const qrCodeDataUrl = await qrcode.toDataURL(qrData);
+
+      // Async email trigger
+      sendTicketEmail(newTeam, event.title, qrCodeDataUrl).catch(console.error);
+
+      createdTeams.push({
+        team: newTeam,
+        qrCode: qrCodeDataUrl
+      });
+    }
+
+    res.status(201).json({ message: `Successfully formed ${createdTeams.length} teams.`, teams: createdTeams });
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 // Route for simple server status check

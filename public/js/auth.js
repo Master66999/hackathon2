@@ -5,7 +5,7 @@
  */
 
 // Pages that don't need auth check
-const PUBLIC_PAGES = ['landing.html', 'login.html', 'signup.html'];
+const PUBLIC_PAGES = ['landing.html', 'login.html', 'signup.html', 'matchmaker.html'];
 
 const AuthHelper = {
   // Store original fetch reference to bypass override and avoid recursion

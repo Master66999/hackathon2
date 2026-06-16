@@ -10,7 +10,7 @@
   <style>
     .scanner-grid {
       display: grid;
-      grid-template-columns: 400px 1fr;
+      grid-template-columns: 420px 1fr;
       gap: 24px;
       align-items: start;
     }
@@ -31,6 +31,10 @@
       border-radius: 12px;
       padding: 16px 20px;
       text-align: center;
+      transition: all var(--transition-fast);
+    }
+    .stat-block:hover {
+      transform: translateY(-1px);
     }
 
     .stat-block .stat-value {
@@ -56,13 +60,13 @@
       padding: 12px 16px;
       border-radius: 10px;
       border: 1px solid var(--border-color);
-      background: var(--bg-card);
-      transition: all 0.2s;
+      background: rgba(255, 255, 255, 0.01);
+      transition: all var(--transition-fast);
     }
 
     .scan-log-row:hover {
       border-color: var(--mint-glow);
-      background: var(--bg-card-hover);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .scan-log-row.success-row {
@@ -85,15 +89,15 @@
     }
 
     .scan-log-icon.success {
-      background: rgba(22, 163, 74, 0.1);
+      background: rgba(0, 255, 204, 0.08);
       color: var(--mint);
       border: 1px solid var(--mint-glow);
     }
 
     .scan-log-icon.error {
-      background: rgba(220, 38, 38, 0.08);
+      background: rgba(244, 63, 94, 0.08);
       color: var(--rose);
-      border: 1px solid rgba(220, 38, 38, 0.2);
+      border: 1px solid rgba(244, 63, 94, 0.2);
     }
 
     .scan-log-body {
@@ -121,6 +125,7 @@
       font-family: var(--font-mono);
       color: var(--text-muted);
       flex-shrink: 0;
+      text-align: right;
     }
 
     .scan-log-list {
@@ -160,7 +165,7 @@
     #scan-status-alert {
       padding: 14px 18px;
       border-radius: 10px;
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.01);
       border: 1px solid var(--border-color);
       text-align: center;
       margin-bottom: 18px;
@@ -184,7 +189,7 @@
           <div class="stat-value" id="stat-success" style="color: var(--mint);">0</div>
           <div class="stat-label">Successful Check-ins</div>
         </div>
-        <div class="stat-block" style="border-color: rgba(220, 38, 38, 0.2);">
+        <div class="stat-block" style="border-color: rgba(244, 63, 94, 0.2);">
           <div class="stat-value" id="stat-failed" style="color: var(--rose);">0</div>
           <div class="stat-label">Failed Attempts</div>
         </div>
@@ -208,7 +213,7 @@
               <label for="camera-select" style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">
                 <i class="fa-solid fa-video"></i> Select Video Device
               </label>
-              <select id="camera-select" class="form-control" onchange="startScanner()">
+              <select id="camera-select" class="form-control" onchange="startScanner()" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
                 <option value="">Detecting cameras...</option>
               </select>
             </div>
@@ -219,7 +224,7 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-              <button class="btn btn-primary" style="flex: 1;" onclick="startScanner()">
+              <button class="btn btn-mint" style="flex: 1;" onclick="startScanner()">
                 <i class="fa-solid fa-play"></i> Start Camera
               </button>
               <button class="btn btn-secondary" onclick="stopScanner()">
@@ -239,7 +244,7 @@
               </label>
               <textarea id="manual-qr-input" class="form-control" rows="3"
                 placeholder='{"teamId":"...","eventId":"...","teamName":"...","eventName":"..."}'
-                style="font-family: var(--font-mono); font-size: 12px; resize: none;"></textarea>
+                style="font-family: var(--font-mono); font-size: 12px; resize: none; background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></textarea>
             </div>
             <button class="btn btn-secondary" style="width: 100%;" onclick="processManualQR()">
               <i class="fa-solid fa-clipboard-check"></i> Process Manual Entry
@@ -259,7 +264,7 @@
           <div id="last-scan-card" class="card" style="display: none; margin-bottom: 18px; border-color: var(--mint-glow); padding: 20px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
               <div class="pulse-ring">
-                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(22, 163, 74, 0.12); display: flex; align-items: center; justify-content: center; color: var(--mint); font-size: 18px; border: 1px solid var(--mint-glow);">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(0, 255, 204, 0.1); display: flex; align-items: center; justify-content: center; color: var(--mint); font-size: 18px; border: 1px solid var(--mint-glow);">
                   <i class="fa-solid fa-circle-check"></i>
                 </div>
               </div>
@@ -269,11 +274,11 @@
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
-              <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">Team</div>
                 <div id="detail-team-name" style="font-weight: 700;">—</div>
               </div>
-              <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">Event</div>
                 <div id="detail-event-name" style="font-weight: 700;">—</div>
               </div>
@@ -372,7 +377,7 @@
       if (html5QrCode) await stopScanner();
 
       document.getElementById('scanner-laser').style.display = 'block';
-      document.getElementById('cam-dot').style.background = '#22c55e';
+      document.getElementById('cam-dot').style.background = '#00ffcc';
       document.getElementById('cam-label').textContent = 'Live';
 
       setStatus('scanning');
@@ -411,11 +416,11 @@
     function setStatus(type, message) {
       const el = document.getElementById('scan-status-alert');
       const configs = {
-        idle:     { icon: 'fa-circle-info',      color: 'var(--violet)',  bg: 'rgba(255,255,255,0.02)', border: 'var(--border-color)', text: 'Awaiting QR Scan...' },
-        scanning: { icon: 'fa-spinner fa-spin',   color: 'var(--mint)',    bg: 'rgba(22, 163, 74, 0.04)', border: 'var(--mint-glow)', text: 'Camera Live — Scanning for QR Code...' },
-        success:  { icon: 'fa-circle-check',      color: 'var(--mint)',    bg: 'rgba(22, 163, 74, 0.06)', border: 'var(--mint-glow)', text: message || 'Check-in Successful!' },
-        error:    { icon: 'fa-circle-xmark',      color: 'var(--rose)',    bg: 'rgba(220, 38, 38, 0.06)', border: 'rgba(220,38,38,0.25)', text: message || 'Scan Failed.' },
-        duplicate:{ icon: 'fa-triangle-exclamation', color: 'var(--gold)', bg: 'rgba(217, 119, 6, 0.06)', border: 'var(--gold-glow)', text: message || 'Already Checked In.' },
+        idle:     { icon: 'fa-circle-info',      color: 'var(--violet)',  bg: 'rgba(255,255,255,0.01)', border: 'var(--border-color)', text: 'Awaiting QR Scan...' },
+        scanning: { icon: 'fa-spinner fa-spin',   color: 'var(--mint)',    bg: 'rgba(0, 255, 204, 0.04)', border: 'var(--mint-glow)', text: 'Camera Live — Scanning for QR Code...' },
+        success:  { icon: 'fa-circle-check',      color: 'var(--mint)',    bg: 'rgba(0, 255, 204, 0.06)', border: 'var(--mint-glow)', text: message || 'Check-in Successful!' },
+        error:    { icon: 'fa-circle-xmark',      color: 'var(--rose)',    bg: 'rgba(244, 63, 94, 0.06)', border: 'rgba(244,63,94,0.25)', text: message || 'Scan Failed.' },
+        duplicate:{ icon: 'fa-triangle-exclamation', color: 'var(--gold)', bg: 'rgba(251, 191, 36, 0.06)', border: 'var(--gold-glow)', text: message || 'Already Checked In.' },
       };
       const cfg = configs[type] || configs.idle;
       el.innerHTML = `<i class="fa-solid ${cfg.icon}" style="color:${cfg.color}; margin-right: 8px;"></i>${cfg.text}`;

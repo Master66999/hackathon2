@@ -21,19 +21,19 @@
     }
     .markdown-body h2 {
       color: var(--mint);
-      border-bottom: 1px solid var(--border-glow);
+      border-bottom: 1px solid var(--border-color);
       padding-bottom: 6px;
-      margin: 18px 0 10px 0;
+      margin: 20px 0 12px 0;
       font-size: 18px;
     }
     .markdown-body h3 {
       color: var(--gold);
-      margin: 14px 0 8px 0;
+      margin: 16px 0 8px 0;
       font-size: 15px;
     }
     .markdown-body ul {
       padding-left: 20px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     .markdown-body li {
       margin-bottom: 6px;
@@ -43,8 +43,14 @@
     }
     .markdown-body hr {
       border: none;
-      border-top: 1px solid var(--border-glow);
-      margin: 12px 0;
+      border-top: 1px solid var(--border-color);
+      margin: 16px 0;
+    }
+    .report-card-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
     }
   </style>
 </head>
@@ -52,65 +58,59 @@
   <div class="app-container">
     <div class="content-body">
       <!-- Buttons Panel -->
-      <div class="card" style="margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px;">
-        <button class="btn btn-mint" onclick="generateReport('summary')">
-          <i class="fa-solid fa-file-invoice"></i> Generate Club Report
-        </button>
-        <button class="btn btn-primary" onclick="generateReport('predict')">
-          <i class="fa-solid fa-chart-line"></i> Predict Future Growth
-        </button>
-        <button class="btn btn-secondary" onclick="generateReport('schedule')" style="border-color: var(--gold-glow); color: var(--gold);">
-          <i class="fa-solid fa-clock"></i> Auto-Schedule Tasks
-        </button>
+      <div class="report-card-actions">
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+          <div>
+            <h4 style="font-weight: 700; font-size: 15px; margin-bottom: 4px; color: var(--mint);"><i class="fa-solid fa-file-invoice"></i> Club Report</h4>
+            <p style="font-size: 12px; color: var(--text-secondary);">Compile club statistics, tasks, and member registrations into an executive summary.</p>
+          </div>
+          <button class="btn btn-mint btn-sm" onclick="generateReport('summary')">
+            Generate Report
+          </button>
+        </div>
+
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+          <div>
+            <h4 style="font-weight: 700; font-size: 15px; margin-bottom: 4px; color: var(--violet);"><i class="fa-solid fa-chart-line"></i> Predict Future Growth</h4>
+            <p style="font-size: 12px; color: var(--text-secondary);">Forecast next-quarter registrations and attendance trends based on past events.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="generateReport('predict')">
+            Forecast Growth
+          </button>
+        </div>
+
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+          <div>
+            <h4 style="font-weight: 700; font-size: 15px; margin-bottom: 4px; color: var(--gold);"><i class="fa-solid fa-clock"></i> Auto-Schedule Tasks</h4>
+            <p style="font-size: 12px; color: var(--text-secondary);">Automatically balance workloads and distribute pending tasks to active members.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="generateReport('schedule')" style="border-color: var(--gold-glow); color: var(--gold);">
+            Run Scheduler
+          </button>
+        </div>
       </div>
 
       <!-- Event Report Section -->
-      <div class="card" style="margin-bottom: 24px; border-color: rgba(245,158,11,0.3); background: linear-gradient(135deg, rgba(245,158,11,0.04) 0%, rgba(13,14,18,0) 60%);">
+      <div class="card" style="margin-bottom: 24px; border-color: rgba(245,158,11,0.25); background: linear-gradient(135deg, rgba(245,158,11,0.02) 0%, transparent 60%);">
         <div class="card-title" style="margin-bottom: 14px;">
-          <span><i class="fa-solid fa-calendar-check" style="color: var(--gold); margin-right: 8px;"></i>Generate Event Report</span>
-          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">AI-powered per-event deep analysis</div>
+          <span><i class="fa-solid fa-calendar-check" style="color: var(--gold); margin-right: 8px;"></i> Generate Event Deep-Dive Report</span>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">Event-specific participant and grading analytics</div>
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
           <div style="position: relative; flex: 1; min-width: 220px;">
-            <select id="event-select"
-              style="
-                width: 100%;
-                background: rgba(255,255,255,0.04);
-                border: 1px solid rgba(245,158,11,0.35);
-                border-radius: 10px;
-                color: var(--text-primary);
-                font-family: var(--font-mono);
-                font-size: 13px;
-                padding: 10px 38px 10px 16px;
-                appearance: none;
-                -webkit-appearance: none;
-                cursor: pointer;
-                outline: none;
-                transition: border-color 0.2s, box-shadow 0.2s;
-              "
-              onfocus="this.style.borderColor='var(--gold)'; this.style.boxShadow='0 0 0 3px rgba(245,158,11,0.15)'"
-              onblur="this.style.borderColor='rgba(245,158,11,0.35)'; this.style.boxShadow='none'">
+            <select id="event-select" class="form-control" style="background-color: rgba(5,6,8,0.4); border-color: rgba(245,158,11,0.25);">
               <option value="" disabled selected style="background:#1a1c24; color: var(--text-muted);">— Select an Event —</option>
             </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color: var(--gold); pointer-events:none; font-size:11px;"></i>
           </div>
-          <button id="btn-event-report" class="btn" onclick="generateEventReport()"
+          <button id="btn-event-report" class="btn btn-mint" onclick="generateEventReport()"
             style="
               background: linear-gradient(135deg, #f59e0b, #d97706);
               color: #0d0e12;
               border: none;
               font-weight: 700;
-              letter-spacing: 0.3px;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              white-space: nowrap;
-              box-shadow: 0 0 18px rgba(245,158,11,0.35);
               transition: all 0.2s;
-            "
-            onmouseover="this.style.boxShadow='0 0 28px rgba(245,158,11,0.6)'; this.style.transform='translateY(-1px)'"
-            onmouseout="this.style.boxShadow='0 0 18px rgba(245,158,11,0.35)'; this.style.transform='translateY(0)'">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Event Report
+            ">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Event Analysis
           </button>
         </div>
         <div id="event-select-error" style="color: var(--rose); font-size:12px; margin-top:8px; display:none;">
@@ -126,27 +126,15 @@
             <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
               channel: secure-llm-link
             </div>
-            <button id="btn-download-report"
+            <button id="btn-download-report" class="btn btn-secondary btn-xs"
               onclick="downloadReport()"
               style="
                 display: none;
-                align-items: center;
-                gap: 6px;
-                padding: 7px 14px;
-                border-radius: 8px;
                 border: 1px solid rgba(22, 163, 74, 0.4);
                 background: rgba(22, 163, 74, 0.08);
                 color: #22c55e;
-                font-size: 12px;
-                font-weight: 700;
-                cursor: pointer;
                 font-family: var(--font-mono);
-                letter-spacing: 0.3px;
-                transition: all 0.2s;
-                white-space: nowrap;
-              "
-              onmouseover="this.style.background='rgba(22,163,74,0.18)'; this.style.borderColor='rgba(22,163,74,0.7)'; this.style.boxShadow='0 0 12px rgba(22,163,74,0.25)';"
-              onmouseout="this.style.background='rgba(22,163,74,0.08)'; this.style.borderColor='rgba(22,163,74,0.4)'; this.style.boxShadow='none';">
+              ">
               <i class="fa-solid fa-download"></i> Download Report
             </button>
           </div>
@@ -160,7 +148,8 @@
     </div>
   </div>
 
-  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
   <script>
     let typingInterval = null;
     let lastReportText = ''; // Store raw report text for download
@@ -204,7 +193,6 @@
         .replace(/^\- (.*$)/gim, '<li>$1</li>');
 
       // Wrap consecutive <li> elements in a <ul> tag
-      // To do this simply, we look for groups of <li> and wrap them
       formatted = formatted.replace(/(<li>.*<\/li>)/gs, (match) => {
         return `<ul>${match}</ul>`;
       });
@@ -219,8 +207,6 @@
       cursor.style.display = 'inline-block';
       element.innerHTML = '';
       
-      // We type word-by-word or tag-by-tag. To keep HTML intact, we can parse it into elements or simple text chunks.
-      // A simple implementation: type character by character but parse tags at once
       let i = 0;
       let currentHTML = '';
       

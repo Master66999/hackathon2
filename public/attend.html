@@ -5,18 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClubPulse - Event Self Check-in</title>
   <meta name="description" content="Self check-in for ClubPulse events. Enter your Team ID and Event ID to record your attendance.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
     .checkin-success {
       display: none;
       text-align: center;
       padding: 32px;
-      background: rgba(0, 255, 204, 0.05);
+      background: rgba(0, 255, 204, 0.04);
       border: 1px solid var(--mint-glow);
       border-radius: 16px;
       margin-top: 24px;
+      backdrop-filter: blur(16px);
     }
-    .checkin-success.active { display: block; }
+    .checkin-success.active { display: block; animation: fadeIn 0.4s ease; }
 
     .checkin-error {
       display: none;
@@ -46,7 +49,7 @@
       content: '';
       position: absolute;
       top: 50%;
-      width: 38%;
+      width: 35%;
       height: 1px;
       background: var(--border-color);
     }
@@ -61,14 +64,19 @@
       border-radius: 10px;
       cursor: pointer;
       border: 1px solid var(--border-color);
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.01);
       color: var(--text-secondary);
       transition: all var(--transition-fast);
     }
     .tab-button.active {
-      background: rgba(168, 85, 247, 0.1);
+      background: rgba(168, 85, 247, 0.08);
       border-color: var(--violet-glow);
       color: var(--violet);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -93,20 +101,20 @@
         </button>
       </div>
 
-      <div class="card">
+      <div class="card" id="form-card">
         <!-- Tab 1: Manual IDs -->
         <div id="panel-ids">
           <form id="checkin-form" onsubmit="submitCheckin(event)">
             <div class="form-group">
               <label for="manual-event">Select Event</label>
-              <select id="manual-event" class="form-control" required>
+              <select id="manual-event" class="form-control" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
                 <option value="">Loading events...</option>
               </select>
             </div>
             <div class="form-group">
               <label for="manual-team-id">Your Team ID</label>
               <input type="text" id="manual-team-id" class="form-control" placeholder="Paste your 24-character Team ObjectId here" required
-                style="font-family: var(--font-mono); letter-spacing: 0.5px; font-size: 13px;">
+                style="font-family: var(--font-mono); letter-spacing: 0.5px; font-size: 13px; background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
               <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
                 Your Team ID was included in your registration confirmation email and QR ticket JSON.
               </div>
@@ -123,7 +131,7 @@
             <label for="qr-paste">Paste QR Ticket JSON Data</label>
             <textarea id="qr-paste" class="form-control" rows="6" 
               placeholder='{"teamId":"...","eventId":"...","teamName":"...","eventName":"..."}'
-              style="font-family: var(--font-mono); font-size: 12px; line-height: 1.6;"></textarea>
+              style="font-family: var(--font-mono); font-size: 12px; line-height: 1.6; background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></textarea>
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
               Copy the JSON from your QR ticket (scan with any QR app and paste the text content here).
             </div>
@@ -146,12 +154,12 @@
         <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
           Your team's attendance for this event has been recorded in the ClubPulse system.
         </p>
-        <div id="checkin-details-box" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; text-align: left; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+        <div id="checkin-details-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; text-align: left; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
           <div><span style="color: var(--text-secondary);">Team ID:</span> <span id="detail-tid" style="font-family: var(--font-mono); color: var(--text-muted); font-size: 11px;"></span></div>
           <div><span style="color: var(--text-secondary);">Event:</span> <strong id="detail-ename" style="color: var(--text-primary);">-</strong></div>
           <div><span style="color: var(--text-secondary);">Timestamp:</span> <span id="detail-ts" style="font-family: var(--font-mono); color: var(--mint);"></span></div>
         </div>
-        <a href="attend.html" class="btn btn-secondary" style="margin-top: 20px; display: inline-flex;">
+        <a href="attend.html" class="btn btn-secondary" style="margin-top: 20px; display: inline-flex; border-color: var(--border-color);">
           <i class="fa-solid fa-rotate-left"></i> Check-in Another Team
         </a>
       </div>
@@ -199,6 +207,7 @@
       document.getElementById('detail-tid').textContent = teamId;
       document.getElementById('detail-ename').textContent = eventName;
       document.getElementById('detail-ts').textContent = new Date().toLocaleString();
+      document.getElementById('form-card').style.display = 'none';
     }
 
     async function loadEvents() {

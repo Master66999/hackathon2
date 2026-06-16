@@ -10,12 +10,24 @@
   <div class="app-container">
     <div class="content-body">
       <!-- Toolbar Section -->
-      <div class="filters-bar">
-        <div class="filter-pills">
-          <button class="filter-pill active" onclick="filterEvents('all')">All Events</button>
-          <button class="filter-pill" onclick="filterEvents('upcoming')">Upcoming</button>
-          <button class="filter-pill" onclick="filterEvents('completed')">Completed</button>
+      <div class="filters-bar" style="display: flex; gap: 16px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          <div class="filter-pills" id="event-filter-pills">
+            <button class="filter-pill active" onclick="filterEvents('all')">All Events</button>
+            <button class="filter-pill" onclick="filterEvents('upcoming')">Upcoming</button>
+            <button class="filter-pill" onclick="filterEvents('completed')">Completed</button>
+          </div>
+          
+          <div class="filter-pills">
+            <button class="filter-pill active" id="view-list-btn" onclick="switchView('list')">
+              <i class="fa-solid fa-list" style="margin-right: 4px;"></i> List
+            </button>
+            <button class="filter-pill" id="view-calendar-btn" onclick="switchView('calendar')">
+              <i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> Calendar
+            </button>
+          </div>
         </div>
+
         <button class="btn btn-mint" onclick="openEventModal()">
           <i class="fa-solid fa-calendar-plus"></i> Add New Event
         </button>
@@ -24,6 +36,43 @@
       <!-- Events Grid -->
       <div class="events-grid" id="events-grid">
         <!-- Dynamically loaded cards -->
+      </div>
+
+      <!-- Calendar View Container -->
+      <div id="calendar-container" class="card" style="display: none; border-color: var(--border-color); padding: 24px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <h3 style="font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 0;">
+            <i class="fa-solid fa-calendar-days" style="color: var(--mint);"></i>
+            <span id="calendar-month-year">June 2026</span>
+          </h3>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="prevMonth()" style="padding: 6px 12px; border-color: var(--border-color);">
+              <i class="fa-solid fa-chevron-left"></i> Previous
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="todayMonth()" style="padding: 6px 12px; border-color: var(--border-color);">
+              Today
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="nextMonth()" style="padding: 6px 12px; border-color: var(--border-color);">
+              Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Weekdays Header -->
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 1px;">
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+        </div>
+
+        <!-- Days Grid -->
+        <div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; min-height: 450px;">
+          <!-- Dynamically filled with days -->
+        </div>
       </div>
     </div>
   </div>
@@ -117,8 +166,8 @@
       </form>
     </div>
   </div>
-
-  <script src="js/auth.js"></script>`n  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
   <script>
     let allEvents = [];
     let currentFilter = 'all';
@@ -128,6 +177,9 @@
         const res = await fetch('/api/events');
         allEvents = await res.json();
         renderEvents();
+        if (currentView === 'calendar') {
+          renderCalendar();
+        }
       } catch (err) {
         console.error('Error loading events:', err);
       }
@@ -353,7 +405,252 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadEvents);
+    // Calendar view state variables
+    let currentView = 'list';
+    let calendarCurrentDate = new Date();
+
+    function switchView(viewType) {
+      currentView = viewType;
+      
+      const listBtn = document.getElementById('view-list-btn');
+      const calendarBtn = document.getElementById('view-calendar-btn');
+      const listContainer = document.getElementById('events-grid');
+      const calendarContainer = document.getElementById('calendar-container');
+      const filterPills = document.getElementById('event-filter-pills');
+      
+      if (viewType === 'list') {
+        listBtn.classList.add('active');
+        calendarBtn.classList.remove('active');
+        listContainer.style.display = 'grid';
+        calendarContainer.style.display = 'none';
+        if (filterPills) {
+          filterPills.style.opacity = '1';
+          filterPills.style.pointerEvents = 'auto';
+        }
+      } else {
+        listBtn.classList.remove('active');
+        calendarBtn.classList.add('active');
+        listContainer.style.display = 'none';
+        calendarContainer.style.display = 'block';
+        if (filterPills) {
+          filterPills.style.opacity = '0.5';
+          filterPills.style.pointerEvents = 'none';
+        }
+        renderCalendar();
+      }
+      
+      localStorage.setItem('cp_events_view', viewType);
+    }
+
+    function prevMonth() {
+      calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() - 1);
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + 1);
+      renderCalendar();
+    }
+
+    function todayMonth() {
+      calendarCurrentDate = new Date();
+      renderCalendar();
+    }
+
+    function openEventModalWithDate(date) {
+      openEventModal(null);
+      
+      // Format the date to local string required by datetime-local (yyyy-MM-ddThh:mm)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = '09';
+      const minutes = '00';
+      
+      const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+      document.getElementById('event-date').value = localDateTime;
+    }
+
+    function createDayCell(dayNumber, date, isCurrentMonth, isToday = false) {
+      const cell = document.createElement('div');
+      cell.style.background = isCurrentMonth ? 'rgba(255, 255, 255, 0.015)' : 'rgba(255, 255, 255, 0.003)';
+      cell.style.border = '1px solid var(--border-color)';
+      cell.style.borderRadius = '8px';
+      cell.style.padding = '8px';
+      cell.style.minHeight = '95px';
+      cell.style.display = 'flex';
+      cell.style.flexDirection = 'column';
+      cell.style.position = 'relative';
+      cell.style.transition = 'all var(--transition-fast)';
+      
+      if (isCurrentMonth) {
+        cell.style.cursor = 'pointer';
+        cell.addEventListener('mouseenter', () => {
+          cell.style.borderColor = 'var(--border-glow)';
+          cell.style.background = 'rgba(255, 255, 255, 0.03)';
+        });
+        cell.addEventListener('mouseleave', () => {
+          cell.style.borderColor = 'var(--border-color)';
+          cell.style.background = 'rgba(255, 255, 255, 0.015)';
+        });
+        
+        // Add Click listener to schedule a new event
+        cell.addEventListener('click', (e) => {
+          if (e.target.closest('.calendar-event-badge')) return;
+          openEventModalWithDate(date);
+        });
+      } else {
+        cell.style.opacity = '0.4';
+      }
+      
+      // Day number indicator
+      const numLabel = document.createElement('div');
+      numLabel.textContent = dayNumber;
+      numLabel.style.fontSize = '12px';
+      numLabel.style.fontWeight = '700';
+      numLabel.style.alignSelf = 'flex-end';
+      numLabel.style.color = isCurrentMonth ? 'var(--text-primary)' : 'var(--text-muted)';
+      
+      if (isToday) {
+        numLabel.style.background = 'var(--mint)';
+        numLabel.style.color = '#050608';
+        numLabel.style.width = '20px';
+        numLabel.style.height = '20px';
+        numLabel.style.borderRadius = '50%';
+        numLabel.style.display = 'flex';
+        numLabel.style.alignItems = 'center';
+        numLabel.style.justifyContent = 'center';
+        numLabel.style.boxShadow = '0 0 8px var(--mint-glow)';
+        cell.style.borderColor = 'var(--mint)';
+      }
+      
+      cell.appendChild(numLabel);
+      
+      // Find events on this date
+      const dateStr = date.toDateString();
+      const eventsOnDate = allEvents.filter(e => {
+        const eDate = new Date(e.date);
+        return eDate.toDateString() === dateStr;
+      });
+      
+      // Container for event badges
+      const badgesContainer = document.createElement('div');
+      badgesContainer.style.display = 'flex';
+      badgesContainer.style.flexDirection = 'column';
+      badgesContainer.style.gap = '4px';
+      badgesContainer.style.marginTop = '6px';
+      badgesContainer.style.flex = '1';
+      badgesContainer.style.overflowY = 'auto';
+      
+      eventsOnDate.forEach(event => {
+        const badge = document.createElement('div');
+        badge.className = 'calendar-event-badge';
+        badge.textContent = event.title;
+        badge.title = `${event.title} (${event.location})`;
+        
+        // Style coding based on type
+        let bg = 'rgba(251, 191, 36, 0.1)';
+        let border = '1px solid var(--gold)';
+        let color = '#fffbeb';
+        
+        if (event.type === 'Competition') {
+          bg = 'rgba(0, 255, 204, 0.1)';
+          border = '1px solid var(--mint)';
+          color = '#e6fffb';
+        } else if (event.type === 'Workshop') {
+          bg = 'rgba(168, 85, 247, 0.1)';
+          border = '1px solid var(--violet)';
+          color = '#f9f0ff';
+        } else if (event.type === 'Social') {
+          bg = 'rgba(244, 63, 94, 0.1)';
+          border = '1px solid var(--rose)';
+          color = '#fff5f5';
+        }
+        
+        badge.style.background = bg;
+        badge.style.border = border;
+        badge.style.color = color;
+        badge.style.fontSize = '10px';
+        badge.style.fontWeight = '700';
+        badge.style.padding = '3px 6px';
+        badge.style.borderRadius = '4px';
+        badge.style.whiteSpace = 'nowrap';
+        badge.style.overflow = 'hidden';
+        badge.style.textOverflow = 'ellipsis';
+        badge.style.cursor = 'pointer';
+        badge.style.transition = 'transform var(--transition-fast)';
+        
+        badge.addEventListener('mouseenter', () => {
+          badge.style.transform = 'scale(1.03)';
+        });
+        badge.addEventListener('mouseleave', () => {
+          badge.style.transform = 'scale(1)';
+        });
+        
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          editEvent(event._id);
+        });
+        
+        badgesContainer.appendChild(badge);
+      });
+      
+      cell.appendChild(badgesContainer);
+      return cell;
+    }
+
+    function renderCalendar() {
+      const monthYearLabel = document.getElementById('calendar-month-year');
+      const daysGrid = document.getElementById('calendar-days-grid');
+      if (!monthYearLabel || !daysGrid) return;
+      
+      const year = calendarCurrentDate.getFullYear();
+      const month = calendarCurrentDate.getMonth();
+      
+      // Set month-year label
+      const monthName = calendarCurrentDate.toLocaleString('en-US', { month: 'long' });
+      monthYearLabel.textContent = `${monthName} ${year}`;
+      
+      // Clear grid
+      daysGrid.innerHTML = '';
+      
+      // First day of the month index (0-6)
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      // Total days in the current month
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      // Total days in the previous month
+      const prevTotalDays = new Date(year, month, 0).getDate();
+      
+      // Days of previous month (blank/dimmed cells)
+      for (let i = firstDayIndex; i > 0; i--) {
+        const day = prevTotalDays - i + 1;
+        const prevMonthDate = new Date(year, month - 1, day);
+        daysGrid.appendChild(createDayCell(day, prevMonthDate, false));
+      }
+      
+      // Days of current month
+      const today = new Date();
+      for (let day = 1; day <= totalDays; day++) {
+        const currentDate = new Date(year, month, day);
+        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+        daysGrid.appendChild(createDayCell(day, currentDate, true, isToday));
+      }
+      
+      // Days of next month to fill the remaining slots (standard calendar has 42 cells)
+      const totalCells = daysGrid.children.length;
+      const remainingCells = 42 - totalCells;
+      for (let day = 1; day <= remainingCells; day++) {
+        const nextMonthDate = new Date(year, month + 1, day);
+        daysGrid.appendChild(createDayCell(day, nextMonthDate, false));
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEvents().then(() => {
+        const savedView = localStorage.getItem('cp_events_view') || 'list';
+        switchView(savedView);
+      });
+    });
   </script>
 </body>
 </html>

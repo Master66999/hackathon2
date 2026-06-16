@@ -1,28 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 /* ==========================================================================
    Design System & Global Variables
    ========================================================================== */
 :root {
-  --bg-main: #f8fafc;
-  --bg-sidebar: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --bg-card-hover: rgba(255, 255, 255, 1);
-  --border-glow: rgba(34, 197, 94, 0.15);
-  --border-glow-hover: rgba(34, 197, 94, 0.35);
+  --bg-main: #050608;
+  --bg-sidebar: rgba(9, 10, 15, 0.95);
+  --bg-card: rgba(15, 17, 26, 0.7);
+  --bg-card-hover: rgba(22, 25, 38, 0.85);
   
-  --mint: #16a34a;
-  --mint-glow: rgba(22, 163, 74, 0.2);
-  --violet: #22c55e;
-  --violet-glow: rgba(34, 197, 94, 0.25);
-  --gold: #d97706;
-  --gold-glow: rgba(217, 119, 6, 0.2);
-  --rose: #dc2626;
+  --mint: #00ffcc;
+  --mint-glow: rgba(0, 255, 204, 0.15);
+  --violet: #a855f7;
+  --violet-glow: rgba(168, 85, 247, 0.25);
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.2);
+  --rose: #f43f5e;
+  --rose-glow: rgba(244, 63, 94, 0.2);
   
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --border-color: rgba(15, 23, 42, 0.08);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(168, 85, 247, 0.2);
+  --border-glow-hover: rgba(0, 255, 204, 0.3);
   
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -41,8 +42,6 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.08) transparent;
 }
 
 body {
@@ -51,14 +50,46 @@ body {
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Grid & Orb Background Effects */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(22, 163, 74, 0.03) 0px, transparent 50%);
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: -2;
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.07) 0%, transparent 70%);
+  top: -150px;
+  right: -100px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: floatOrb 15s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-50px, 50px) scale(1.1); }
 }
 
 a {
   color: inherit;
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 button, input, select, textarea {
@@ -66,19 +97,20 @@ button, input, select, textarea {
   color: inherit;
   background: none;
   border: none;
+  outline: none;
 }
 
 /* Scrollbar Customization */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -97,6 +129,7 @@ button, input, select, textarea {
   width: var(--sidebar-width);
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
+  backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -127,7 +160,7 @@ button, input, select, textarea {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   overflow-y: auto;
 }
 
@@ -135,37 +168,36 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-radius: 10px;
   color: var(--text-secondary);
   font-weight: 500;
+  font-size: 14px;
   transition: all var(--transition-fast);
   border: 1px solid transparent;
 }
 
 .sidebar-menu-item a:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
   padding-left: 20px;
 }
 
+.sidebar-menu-item a i {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+
 .sidebar-menu-item.active a {
-  background: rgba(168, 85, 247, 0.1);
+  background: rgba(168, 85, 247, 0.08);
   color: var(--text-primary);
   border: 1px solid var(--border-glow);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.05);
 }
 
 .sidebar-menu-item.active a i {
   color: var(--violet);
-}
-
-.sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid var(--border-color);
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
 }
 
 /* Content Area */
@@ -182,8 +214,9 @@ button, input, select, textarea {
 .top-header {
   height: var(--header-height);
   border-bottom: 1px solid var(--border-color);
-  background: rgba(9, 10, 15, 0.5);
-  backdrop-filter: blur(12px);
+  background: rgba(5, 6, 8, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,13 +234,18 @@ button, input, select, textarea {
 
 .menu-toggle {
   display: none;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .page-title {
@@ -219,7 +257,7 @@ button, input, select, textarea {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .clock {
@@ -227,8 +265,8 @@ button, input, select, textarea {
   color: var(--text-secondary);
   font-size: 13px;
   background: rgba(255, 255, 255, 0.03);
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
   border: 1px solid var(--border-color);
 }
 
@@ -238,15 +276,15 @@ button, input, select, textarea {
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
-  background: rgba(0, 255, 204, 0.08);
+  background: rgba(0, 255, 204, 0.06);
   border: 1px solid var(--mint-glow);
   color: var(--mint);
 }
 
 .db-status.offline {
-  background: rgba(251, 191, 36, 0.08);
+  background: rgba(251, 191, 36, 0.06);
   border: 1px solid var(--gold-glow);
   color: var(--gold);
 }
@@ -265,7 +303,7 @@ button, input, select, textarea {
 
 @keyframes pulse-dot {
   0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 12px currentColor; }
+  50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 10px currentColor; }
   100% { transform: scale(0.95); opacity: 0.5; }
 }
 
@@ -278,7 +316,7 @@ button, input, select, textarea {
 }
 
 /* ==========================================================================
-   UI Components & Components Styles
+   UI Components
    ========================================================================== */
 
 /* Glass Cards */
@@ -287,9 +325,9 @@ button, input, select, textarea {
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
@@ -308,38 +346,13 @@ button, input, select, textarea {
 
 .card:hover {
   background: var(--bg-card-hover);
-  border-color: var(--border-glow);
-  box-shadow: 0 12px 40px 0 rgba(34, 197, 94, 0.08);
+  border-color: var(--border-glow-hover);
+  box-shadow: 0 16px 50px -10px rgba(0, 255, 204, 0.05);
   transform: translateY(-2px);
 }
 
 .card:hover::before {
-  background: linear-gradient(90deg, transparent, var(--violet), transparent);
-}
-
-/* Special Glowing Borders for high priority cards */
-.card-glowing-mint {
-  border-color: var(--mint-glow);
-}
-.card-glowing-mint:hover {
-  border-color: var(--mint);
-  box-shadow: 0 12px 40px 0 rgba(0, 255, 204, 0.1);
-}
-
-.card-glowing-violet {
-  border-color: var(--violet-glow);
-}
-.card-glowing-violet:hover {
-  border-color: var(--violet);
-  box-shadow: 0 12px 40px 0 rgba(168, 85, 247, 0.1);
-}
-
-.card-glowing-gold {
-  border-color: var(--gold-glow);
-}
-.card-glowing-gold:hover {
-  border-color: var(--gold);
-  box-shadow: 0 12px 40px 0 rgba(251, 191, 36, 0.1);
+  background: linear-gradient(90deg, transparent, var(--mint), transparent);
 }
 
 .card-title {
@@ -349,6 +362,10 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.card-title i {
+  font-size: 16px;
 }
 
 /* Stats Metric Grids */
@@ -366,45 +383,45 @@ button, input, select, textarea {
 }
 
 .metric-info h4 {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
 }
 
 .metric-info .value {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
 }
 
 .metric-icon {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 20px;
   border: 1px solid var(--border-color);
 }
 
 .metric-mint .metric-icon {
-  background: rgba(0, 255, 204, 0.08);
+  background: rgba(0, 255, 204, 0.05);
   border-color: var(--mint-glow);
   color: var(--mint);
 }
 
 .metric-violet .metric-icon {
-  background: rgba(168, 85, 247, 0.08);
+  background: rgba(168, 85, 247, 0.05);
   border-color: var(--violet-glow);
   color: var(--violet);
 }
 
 .metric-gold .metric-icon {
-  background: rgba(251, 191, 36, 0.08);
+  background: rgba(251, 191, 36, 0.05);
   border-color: var(--gold-glow);
   color: var(--gold);
 }
@@ -415,7 +432,7 @@ button, input, select, textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px 22px;
   font-size: 14px;
   font-weight: 600;
   border-radius: 10px;
@@ -427,58 +444,58 @@ button, input, select, textarea {
 .btn-primary {
   background: linear-gradient(135deg, var(--violet), #7c3aed);
   color: var(--text-primary);
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.25);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.15);
 }
 
 .btn-primary:hover {
   opacity: 0.95;
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.45);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .btn-mint {
   background: linear-gradient(135deg, var(--mint), #00d4aa);
-  color: #090a0f;
-  box-shadow: 0 4px 15px rgba(0, 255, 204, 0.2);
+  color: #050608;
+  box-shadow: 0 4px 15px rgba(0, 255, 204, 0.15);
 }
 
 .btn-mint:hover {
   opacity: 0.95;
-  box-shadow: 0 4px 20px rgba(0, 255, 204, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 255, 204, 0.3);
   transform: translateY(-1px);
 }
 
 .btn-danger {
-  background: rgba(244, 63, 94, 0.1);
+  background: rgba(244, 63, 94, 0.08);
   color: var(--rose);
   border: 1px solid rgba(244, 63, 94, 0.2);
 }
 
 .btn-danger:hover {
-  background: rgba(244, 63, 94, 0.2);
+  background: rgba(244, 63, 94, 0.15);
   border-color: var(--rose);
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-size: 12px;
   border-radius: 8px;
 }
 
 .btn-xs {
-  padding: 2px 6px;
-  font-size: 10px;
+  padding: 4px 8px;
+  font-size: 11px;
   border-radius: 6px;
 }
 
@@ -496,39 +513,39 @@ button, input, select, textarea {
 }
 
 .badge-active {
-  background: rgba(0, 255, 204, 0.1);
+  background: rgba(0, 255, 204, 0.06);
   color: var(--mint);
   border: 1px solid var(--mint-glow);
 }
 
 .badge-inactive {
-  background: rgba(100, 116, 139, 0.1);
+  background: rgba(100, 116, 139, 0.06);
   color: var(--text-muted);
-  border: 1px solid rgba(100, 116, 139, 0.2);
+  border: 1px solid rgba(100, 116, 139, 0.15);
 }
 
 .badge-upcoming {
-  background: rgba(251, 191, 36, 0.1);
+  background: rgba(251, 191, 36, 0.06);
   color: var(--gold);
   border: 1px solid var(--gold-glow);
 }
 
 .badge-completed {
-  background: rgba(168, 85, 247, 0.1);
+  background: rgba(168, 85, 247, 0.06);
   color: var(--violet);
   border: 1px solid var(--border-glow);
 }
 
 .badge-pending {
-  background: rgba(244, 63, 94, 0.1);
+  background: rgba(244, 63, 94, 0.06);
   color: var(--rose);
-  border: 1px solid rgba(244, 63, 94, 0.2);
+  border: 1px solid var(--rose-glow);
 }
 
 .badge-progress {
-  background: rgba(0, 191, 255, 0.1);
+  background: rgba(0, 191, 255, 0.06);
   color: #00bfff;
-  border: 1px solid rgba(0, 191, 255, 0.25);
+  border: 1px solid rgba(0, 191, 255, 0.15);
 }
 
 /* Forms & Inputs */
@@ -546,7 +563,7 @@ button, input, select, textarea {
 
 .form-control {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 12px 16px;
@@ -555,15 +572,29 @@ button, input, select, textarea {
   transition: all var(--transition-fast);
 }
 
+.form-control::placeholder {
+  color: var(--text-muted);
+}
+
 .form-control:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   border-color: var(--violet);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+}
+
+select.form-control {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 40px;
 }
 
 select.form-control option {
-  background-color: var(--bg-sidebar);
+  background-color: #0d0f17;
   color: var(--text-primary);
 }
 
@@ -580,6 +611,7 @@ select.form-control option {
   border-collapse: collapse;
   text-align: left;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .custom-table th {
@@ -602,7 +634,7 @@ select.form-control option {
 }
 
 .custom-table tr:hover td {
-  background: rgba(255, 255, 255, 0.01);
+  background: rgba(255, 255, 255, 0.015);
 }
 
 /* Leaderboard Specifics */
@@ -617,7 +649,7 @@ select.form-control option {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   transition: all var(--transition-fast);
@@ -625,7 +657,7 @@ select.form-control option {
 
 .leaderboard-item:hover {
   border-color: var(--border-glow);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .leaderboard-rank {
@@ -638,12 +670,12 @@ select.form-control option {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.rank-1 .leaderboard-rank { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid var(--gold-glow); }
-.rank-2 .leaderboard-rank { background: rgba(255, 255, 255, 0.1); color: #cbd5e0; }
-.rank-3 .leaderboard-rank { background: rgba(168, 85, 247, 0.15); color: var(--violet); }
+.rank-1 .leaderboard-rank { background: rgba(251, 191, 36, 0.1); color: var(--gold); border: 1px solid var(--gold-glow); }
+.rank-2 .leaderboard-rank { background: rgba(255, 255, 255, 0.05); color: #cbd5e0; }
+.rank-3 .leaderboard-rank { background: rgba(168, 85, 247, 0.1); color: var(--violet); }
 
 .leaderboard-member {
   display: flex;
@@ -663,7 +695,7 @@ select.form-control option {
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
-  color: #090a0f;
+  color: #050608;
 }
 
 .member-details h5 {
@@ -701,8 +733,9 @@ select.form-control option {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(9, 10, 15, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(3, 4, 6, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -720,12 +753,13 @@ select.form-control option {
 .modal-container {
   width: 90%;
   max-width: 500px;
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-glow);
+  background: #0d0f17;
+  border: 1px solid var(--border-color);
   border-radius: 20px;
-  box-shadow: 0 0 50px rgba(168, 85, 247, 0.15);
-  transform: translateY(20px);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7);
+  transform: translateY(30px);
   transition: transform var(--transition-normal);
+  overflow: hidden;
 }
 
 .modal-overlay.active .modal-container {
@@ -738,6 +772,7 @@ select.form-control option {
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .modal-header h3 {
@@ -767,6 +802,7 @@ select.form-control option {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  background: rgba(255, 255, 255, 0.01);
 }
 
 /* Event Cards Layout */
@@ -823,7 +859,7 @@ select.form-control option {
 
 .filter-pills {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .filter-pill {
@@ -832,7 +868,7 @@ select.form-control option {
   font-weight: 600;
   border-radius: 20px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   transition: all var(--transition-fast);
@@ -840,7 +876,7 @@ select.form-control option {
 
 .filter-pill:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .filter-pill.active {
@@ -852,7 +888,7 @@ select.form-control option {
 /* AI Terminal Styles */
 .ai-terminal {
   background: #020205;
-  border: 1px solid var(--border-glow);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 24px;
   font-family: var(--font-mono);
@@ -862,7 +898,7 @@ select.form-control option {
   max-height: 600px;
   overflow-y: auto;
   color: #39ff14; /* Neon green terminal font */
-  box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.05);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
 }
 
 .ai-terminal-prompt {
@@ -909,6 +945,8 @@ select.form-control option {
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
+  z-index: 10;
+  position: relative;
 }
 
 .public-box {
@@ -920,7 +958,7 @@ select.form-control option {
   text-align: center;
   font-weight: 800;
   font-size: 32px;
-  margin-bottom: 30px;
+  margin-bottom: 16px;
   background: linear-gradient(135deg, var(--mint), var(--violet));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -929,7 +967,7 @@ select.form-control option {
 .ticket-result-box {
   text-align: center;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.01);
   border: 1px dashed var(--border-color);
   border-radius: 12px;
   margin-top: 20px;
@@ -953,6 +991,7 @@ select.form-control option {
   
   .sidebar.active {
     transform: translateX(0);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
   }
   
   .main-content {

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 // Real models
 const RealMember = require('./Member');
@@ -7,6 +8,7 @@ const RealTask = require('./Task');
 const RealTeam = require('./Team');
 const RealProblemStatement = require('./ProblemStatement');
 const RealUser = require('./User');
+const RealSoloRegistrant = require('./SoloRegistrant');
 
 let isConnected = false;
 let useMock = false;
@@ -18,7 +20,8 @@ const dbMemory = {
   tasks: [],
   teams: [],
   problemstatements: [],
-  users: []
+  users: [],
+  soloregistrants: []
 };
 
 // Fluent Query Mock
@@ -43,6 +46,13 @@ class MockQuery {
         }
       }
       // Populate Event in Team (registeredEvent)
+      if (path === 'registeredEvent' && item.registeredEvent) {
+        if (typeof item.registeredEvent === 'string' || item.registeredEvent instanceof mongoose.Types.ObjectId) {
+          const event = dbMemory.events.find(e => e._id.toString() === item.registeredEvent.toString());
+          if (event) item.registeredEvent = { ...event };
+        }
+      }
+      // Populate Event in SoloRegistrant (registeredEvent)
       if (path === 'registeredEvent' && item.registeredEvent) {
         if (typeof item.registeredEvent === 'string' || item.registeredEvent instanceof mongoose.Types.ObjectId) {
           const event = dbMemory.events.find(e => e._id.toString() === item.registeredEvent.toString());
@@ -225,13 +235,30 @@ const MockModels = {
   Task: new MockModel('Task', dbMemory.tasks),
   Team: new MockModel('Team', dbMemory.teams),
   ProblemStatement: new MockModel('ProblemStatement', dbMemory.problemstatements),
-  User: new MockModel('User', dbMemory.users)
+  User: new MockModel('User', dbMemory.users),
+  SoloRegistrant: new MockModel('SoloRegistrant', dbMemory.soloregistrants)
 };
 
 // Seed default simulated data
 function seedInitialData(models) {
   return async () => {
     try {
+      const userCount = await models.User.countDocuments();
+      
+      // 0. Create/Find a Default User for seeding
+      let user = await models.User.findOne({ email: 'admin@clubpulse.com' });
+      if (!user) {
+        const hashedPassword = await bcrypt.hash('admin123', 12);
+        user = await models.User.create({
+          name: 'Default Admin',
+          email: 'admin@clubpulse.com',
+          password: hashedPassword,
+          clubName: 'ClubPulse Demo',
+          role: 'Admin'
+        });
+      }
+      const uId = user._id;
+
       const memberCount = await models.Member.countDocuments();
       if (memberCount > 0) return;
 
@@ -239,13 +266,13 @@ function seedInitialData(models) {
 
       // 1. Create Members
       const members = await models.Member.create([
-        { name: 'Alex Rivera', email: 'alex@clubpulse.com', role: 'Admin', status: 'active', engagementScore: 98, completedTasks: 12 },
-        { name: 'Sophia Chen', email: 'sophia@clubpulse.com', role: 'Lead', status: 'active', engagementScore: 95, completedTasks: 9 },
-        { name: 'Marcus Sterling', email: 'marcus@clubpulse.com', role: 'Organizer', status: 'active', engagementScore: 88, completedTasks: 7 },
-        { name: 'Elena Rostova', email: 'elena@clubpulse.com', role: 'Member', status: 'active', engagementScore: 82, completedTasks: 5 },
-        { name: 'Devon Patel', email: 'devon@clubpulse.com', role: 'Member', status: 'active', engagementScore: 75, completedTasks: 4 },
-        { name: 'Sarah Jenkins', email: 'sarah@clubpulse.com', role: 'Member', status: 'inactive', engagementScore: 45, completedTasks: 2 },
-        { name: 'Liam Zhao', email: 'liam@clubpulse.com', role: 'Member', status: 'active', engagementScore: 68, completedTasks: 3 }
+        { userId: uId, name: 'Alex Rivera', email: 'alex@clubpulse.com', role: 'Admin', status: 'active', engagementScore: 98, completedTasks: 12 },
+        { userId: uId, name: 'Sophia Chen', email: 'sophia@clubpulse.com', role: 'Lead', status: 'active', engagementScore: 95, completedTasks: 9 },
+        { userId: uId, name: 'Marcus Sterling', email: 'marcus@clubpulse.com', role: 'Organizer', status: 'active', engagementScore: 88, completedTasks: 7 },
+        { userId: uId, name: 'Elena Rostova', email: 'elena@clubpulse.com', role: 'Member', status: 'active', engagementScore: 82, completedTasks: 5 },
+        { userId: uId, name: 'Devon Patel', email: 'devon@clubpulse.com', role: 'Member', status: 'active', engagementScore: 75, completedTasks: 4 },
+        { userId: uId, name: 'Sarah Jenkins', email: 'sarah@clubpulse.com', role: 'Member', status: 'inactive', engagementScore: 45, completedTasks: 2 },
+        { userId: uId, name: 'Liam Zhao', email: 'liam@clubpulse.com', role: 'Member', status: 'active', engagementScore: 68, completedTasks: 3 }
       ]);
 
       // 2. Create Events
@@ -257,6 +284,7 @@ function seedInitialData(models) {
 
       const events = await models.Event.create([
         {
+          userId: uId,
           title: 'PulseHack 2026',
           description: 'The premier smart club 48-hour hackathon for building AI-driven utilities and web dashboards.',
           date: nextWeek,
@@ -267,6 +295,7 @@ function seedInitialData(models) {
           organizer: 'Sophia Chen'
         },
         {
+          userId: uId,
           title: 'NextGen Web Dev Workshop',
           description: 'Hands-on training session for building glassmorphic web UI components using CSS variables.',
           date: nextMonth,
@@ -277,6 +306,7 @@ function seedInitialData(models) {
           organizer: 'Marcus Sterling'
         },
         {
+          userId: uId,
           title: 'AI/ML Spring BootCamp',
           description: 'Introduction to predictive analysis model workflows and prompt engineering structures.',
           date: pastWeek,
@@ -287,6 +317,7 @@ function seedInitialData(models) {
           organizer: 'Alex Rivera'
         },
         {
+          userId: uId,
           title: 'Club Launch & Mixer',
           description: 'Networking night for new club members and industry mentors.',
           date: pastMonth,
@@ -300,16 +331,17 @@ function seedInitialData(models) {
 
       // 3. Create Tasks
       await models.Task.create([
-        { title: 'Design Glassmorphic UI Shell', assignedTo: members[0]._id, description: 'Create style.css variables and structure the layout components script.', status: 'completed', dueDate: pastWeek },
-        { title: 'Setup Node/Mongoose API Server', assignedTo: members[1]._id, description: 'Write REST endpoints, models schema, and connection configuration.', status: 'completed', dueDate: pastWeek },
-        { title: 'Draft PulseHack Sponsor Deck', assignedTo: members[2]._id, description: 'Coordinate with design lead to finalize the slides for corporate partners.', status: 'in-progress', dueDate: nextWeek },
-        { title: 'Integrate QR Code Reader API', assignedTo: members[3]._id, description: 'Write scan.html UI and integrate it with html5-qrcode scanner libraries.', status: 'pending', dueDate: nextWeek },
-        { title: 'Create Promo Video Assets', assignedTo: members[4]._id, description: 'Film social media teaser clips and publish them to Instagram/X pages.', status: 'pending', dueDate: nextWeek }
+        { userId: uId, title: 'Design Glassmorphic UI Shell', assignedTo: members[0]._id, description: 'Create style.css variables and structure the layout components script.', status: 'completed', dueDate: pastWeek },
+        { userId: uId, title: 'Setup Node/Mongoose API Server', assignedTo: members[1]._id, description: 'Write REST endpoints, models schema, and connection configuration.', status: 'completed', dueDate: pastWeek },
+        { userId: uId, title: 'Draft PulseHack Sponsor Deck', assignedTo: members[2]._id, description: 'Coordinate with design lead to finalize the slides for corporate partners.', status: 'in-progress', dueDate: nextWeek },
+        { userId: uId, title: 'Integrate QR Code Reader API', assignedTo: members[3]._id, description: 'Write scan.html UI and integrate it with html5-qrcode scanner libraries.', status: 'pending', dueDate: nextWeek },
+        { userId: uId, title: 'Create Promo Video Assets', assignedTo: members[4]._id, description: 'Film social media teaser clips and publish them to Instagram/X pages.', status: 'pending', dueDate: nextWeek }
       ]);
 
       // 4. Create Teams
       const teams = await models.Team.create([
         {
+          userId: uId,
           name: 'CyberNeura',
           leaderName: 'Devon Patel',
           leaderEmail: 'devon@cyberneura.io',
@@ -324,6 +356,7 @@ function seedInitialData(models) {
           performanceFeedback: 'Excellent deployment of ML model for predictive power analysis. Glassmorphic dashboard UI is clean.'
         },
         {
+          userId: uId,
           name: 'VortexWeb',
           leaderName: 'Liam Zhao',
           leaderEmail: 'liam@vortexweb.dev',
@@ -343,6 +376,7 @@ function seedInitialData(models) {
       // 5. Create Problem Statements
       await models.ProblemStatement.create([
         {
+          userId: uId,
           title: 'Smart Energy Grid Optimizer',
           description: 'Leverage predictive AI modeling to distribute power grid loads dynamically and reduce waste.',
           category: 'AI/ML',
@@ -350,6 +384,7 @@ function seedInitialData(models) {
           allocatedToTeam: teams[0]._id
         },
         {
+          userId: uId,
           title: 'DeFi Liquidity Aggregator',
           description: 'Create a cross-chain smart aggregator to minimize slippage rates on decentralized tokens swap.',
           category: 'Web3',
@@ -357,6 +392,7 @@ function seedInitialData(models) {
           allocatedToTeam: teams[1]._id
         },
         {
+          userId: uId,
           title: 'Vulnerability Detection Scanner',
           description: 'Build a lightweight terminal client to trace Node dependencies trees and detect outdated API calls.',
           category: 'Web Dev',
@@ -383,7 +419,8 @@ async function connectDb() {
     Task: RealTask,
     Team: RealTeam,
     ProblemStatement: RealProblemStatement,
-    User: RealUser
+    User: RealUser,
+    SoloRegistrant: RealSoloRegistrant
   };
 
   try {
@@ -424,5 +461,6 @@ module.exports = {
   get Task() { return getModel('Task'); },
   get Team() { return getModel('Team'); },
   get ProblemStatement() { return getModel('ProblemStatement'); },
-  get User() { return getModel('User'); }
+  get User() { return getModel('User'); },
+  get SoloRegistrant() { return getModel('SoloRegistrant'); }
 };

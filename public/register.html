@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClubPulse - Team Registration Portal</title>
   <meta name="description" content="Register your hackathon team for ClubPulse events and receive your digital QR ticket instantly.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
     .member-row {
@@ -19,8 +21,8 @@
       border: 1px solid rgba(244, 63, 94, 0.2);
       color: var(--rose);
       border-radius: 8px;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -29,26 +31,29 @@
     }
     .member-row .remove-btn:hover {
       background: rgba(244, 63, 94, 0.15);
+      border-color: var(--rose);
     }
 
     .success-banner {
       display: none;
       text-align: center;
       padding: 30px;
-      background: rgba(0, 255, 204, 0.05);
+      background: rgba(0, 255, 204, 0.04);
       border: 1px solid var(--mint-glow);
       border-radius: 16px;
       margin-top: 20px;
+      backdrop-filter: blur(16px);
     }
     .success-banner.active {
       display: block;
+      animation: fadeIn 0.4s ease;
     }
 
     .step-divider {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin: 20px 0;
+      margin: 24px 0 16px;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -61,6 +66,11 @@
       flex: 1;
       height: 1px;
       background: var(--border-color);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -75,14 +85,14 @@
         Register your hackathon team below. Your confirmation QR ticket will be sent to the leader's email automatically.
       </p>
 
-      <div class="card">
+      <div class="card" id="form-card" style="border-color: var(--border-color);">
         <form id="register-form" onsubmit="submitRegistration(event)">
           <!-- SECTION 1: Event Selection -->
-          <div class="step-divider">Step 1 — Select Event</div>
+          <div class="step-divider" style="margin-top: 0;">Step 1 — Select Event</div>
 
           <div class="form-group">
             <label for="reg-event">Choose Hackathon or Competition Event</label>
-            <select id="reg-event" class="form-control" required>
+            <select id="reg-event" class="form-control" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
               <option value="">Loading available events...</option>
             </select>
           </div>
@@ -92,16 +102,16 @@
 
           <div class="form-group">
             <label for="reg-team-name">Team Name</label>
-            <input type="text" id="reg-team-name" class="form-control" placeholder="e.g. CyberNeura" required>
+            <input type="text" id="reg-team-name" class="form-control" placeholder="e.g. CyberNeura" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
               <label for="reg-leader-name">Leader Full Name</label>
-              <input type="text" id="reg-leader-name" class="form-control" placeholder="e.g. Devon Patel" required>
+              <input type="text" id="reg-leader-name" class="form-control" placeholder="e.g. Devon Patel" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
             </div>
             <div class="form-group">
               <label for="reg-leader-email">Leader Email</label>
-              <input type="email" id="reg-leader-email" class="form-control" placeholder="dev@email.com" required>
+              <input type="email" id="reg-leader-email" class="form-control" placeholder="dev@email.com" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
             </div>
           </div>
 
@@ -112,7 +122,7 @@
             <!-- Dynamic member rows will be inserted here -->
           </div>
 
-          <button type="button" class="btn btn-secondary" onclick="addMemberRow()" style="width: 100%; margin-bottom: 4px; border-style: dashed; border-color: var(--border-glow); color: var(--violet);">
+          <button type="button" class="btn btn-secondary" onclick="addMemberRow()" style="width: 100%; margin-bottom: 20px; border-style: dashed; border-color: var(--border-glow); color: var(--violet);">
             <i class="fa-solid fa-circle-plus"></i> Add Another Member
           </button>
 
@@ -131,11 +141,11 @@
         <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;" id="success-msg">
           Your team has been registered. Save your QR ticket below for event check-in.
         </p>
-        <div class="ticket-result-box">
+        <div class="ticket-result-box" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
           <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">Your Access QR Ticket</div>
           <img id="qr-ticket-img" src="" alt="QR Code Ticket" class="ticket-qr-image" style="max-width: 200px; max-height: 200px;">
           <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Present or scan this QR code at the event entrance.</p>
-          <a id="qr-download-link" href="#" download="ticket-qr.png" class="btn btn-secondary btn-sm" style="margin-top: 12px; display: inline-flex;">
+          <a id="qr-download-link" href="#" download="ticket-qr.png" class="btn btn-secondary btn-sm" style="margin-top: 12px; display: inline-flex; border-color: var(--border-color);">
             <i class="fa-solid fa-download"></i> Download Ticket
           </a>
         </div>
@@ -167,8 +177,8 @@
       row.className = 'member-row';
       row.id = `member-row-${memberCount}`;
       row.innerHTML = `
-        <input type="text" placeholder="Member Name" class="form-control member-name" value="${defaultName}">
-        <input type="email" placeholder="Member Email" class="form-control member-email" value="${defaultEmail}">
+        <input type="text" placeholder="Member Name" class="form-control member-name" value="${defaultName}" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+        <input type="email" placeholder="Member Email" class="form-control member-email" value="${defaultEmail}" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
         <div class="remove-btn" onclick="removeMemberRow(${memberCount})" title="Remove member">
           <i class="fa-solid fa-xmark"></i>
         </div>
@@ -258,8 +268,8 @@
           dlLink.href = data.qrCode;
         }
 
-        // Hide the form
-        document.getElementById('register-form').style.display = 'none';
+        // Hide the form card
+        document.getElementById('form-card').style.display = 'none';
 
       } catch (err) {
         console.error('Registration error:', err);

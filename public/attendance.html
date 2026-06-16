@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Attendance Hub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .attendance-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .attendance-control-panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 360px;
+      min-width: 200px;
+    }
+    .search-wrapper i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+    .search-wrapper .form-control {
+      padding-left: 38px;
+    }
+    .attendance-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .attendance-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--mint), var(--violet));
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-body">
+      <!-- Top Metrics -->
+      <div class="attendance-stats">
+        <div class="card metric-card metric-mint">
+          <div class="metric-info">
+            <h4>Total Teams Registered</h4>
+            <div class="value" id="total-teams-val">0</div>
+          </div>
+          <div class="metric-icon"><i class="fa-solid fa-people-group"></i></div>
+        </div>
+        <div class="card metric-card metric-violet">
+          <div class="metric-info">
+            <h4>Attended Teams</h4>
+            <div class="value" id="attended-teams-val">0</div>
+          </div>
+          <div class="metric-icon"><i class="fa-solid fa-clipboard-user"></i></div>
+        </div>
+        <div class="card metric-card metric-gold">
+          <div class="metric-info">
+            <h4>Attendance Rate</h4>
+            <div class="value" id="attendance-rate-val">0%</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="rate-bar"></div>
+            </div>
+          </div>
+          <div class="metric-icon"><i class="fa-solid fa-chart-pie"></i></div>
+        </div>
+      </div>
+
+      <!-- Layout: Teams Grid + Event Selector -->
+      <div class="attendance-layout">
+        <!-- Left Column: Teams checkin list -->
+        <div class="card" style="padding: 24px;">
+          <div class="attendance-control-panel">
+            <h3 style="font-size: 18px; font-weight: 700;">Event Check-In Roster</h3>
+            <div style="display: flex; gap: 12px; align-items: center; width: 100%; max-width: 600px; justify-content: flex-end; flex-wrap: wrap;">
+              <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-teams" class="form-control" placeholder="Search team or leader..." oninput="filterRoster()">
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="exportCSV()">
+                <i class="fa-solid fa-download"></i> Export Roster
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Team / Leader</th>
+                  <th>Topic</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Manual Action</th>
+                </tr>
+              </thead>
+              <tbody id="roster-table-body">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px;">Select an event on the right panel to show registered teams</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: Select Event / Scan Link -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <!-- Event Selector Card -->
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-calendar" style="color: var(--gold); margin-right: 8px;"></i> Select Event</span>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="event-select">Filter Attendance Roster by Event</label>
+              <select id="event-select" class="form-control" onchange="onEventChanged()" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+                <option value="" disabled selected>Loading active events...</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Shortcuts Card -->
+          <div class="card" style="border-color: var(--violet-glow); background: linear-gradient(135deg, rgba(168, 85, 247, 0.03) 0%, transparent 80%);">
+            <div class="card-title">
+              <span><i class="fa-solid fa-sparkles" style="color: var(--violet); margin-right: 8px;"></i> Check-in Methods</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+              You can scan QR code tickets using the camera dashboard page or allow teams to self check-in using their Team IDs.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <a href="scan.html" class="btn btn-primary" style="width: 100%;">
+                <i class="fa-solid fa-camera"></i> Open Camera Scanner
+              </a>
+              <a href="attend.html" class="btn btn-secondary" target="_blank" style="width: 100%;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Self Check-in Portal
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    let allEvents = [];
+    let allTeams = [];
+    let selectedEventId = '';
+
+    async function loadData() {
+      try {
+        const eventsRes = await fetch('/api/events');
+        allEvents = await eventsRes.json();
+        
+        const teamsRes = await fetch('/api/teams');
+        allTeams = await teamsRes.json();
+
+        populateEventsDropdown();
+      } catch (err) {
+        console.error('Error loading attendance data:', err);
+      }
+    }
+
+    function populateEventsDropdown() {
+      const select = document.getElementById('event-select');
+      select.innerHTML = '';
+
+      if (!allEvents || allEvents.length === 0) {
+        select.innerHTML = '<option value="">No events found</option>';
+        return;
+      }
+
+      // Add placeholder
+      select.innerHTML = '<option value="" disabled selected>— Select an Event —</option>';
+      allEvents.forEach(e => {
+        const dateStr = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        select.innerHTML += `<option value="${e._id}">${e.title} (${dateStr})</option>`;
+      });
+
+      // Default select the first event if available
+      if (allEvents.length > 0) {
+        select.selectedIndex = 1;
+        onEventChanged();
+      }
+    }
+
+    function onEventChanged() {
+      selectedEventId = document.getElementById('event-select').value;
+      renderRoster();
+    }
+
+    function renderRoster() {
+      const tbody = document.getElementById('roster-table-body');
+      tbody.innerHTML = '';
+
+      if (!selectedEventId) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px;">Select an event from the panel</td></tr>';
+        return;
+      }
+
+      // Filter teams registered for this event
+      const eventTeams = allTeams.filter(t => {
+        const evId = t.registeredEvent?._id || t.registeredEvent;
+        return evId?.toString() === selectedEventId.toString();
+      });
+
+      const totalTeams = eventTeams.length;
+      let attendedTeams = 0;
+
+      const searchValue = document.getElementById('search-teams').value.toLowerCase().trim();
+
+      const filteredTeams = eventTeams.filter(t => {
+        const matchesSearch = t.name.toLowerCase().includes(searchValue) || 
+                              t.leaderName.toLowerCase().includes(searchValue) ||
+                              t.leaderEmail.toLowerCase().includes(searchValue);
+        return matchesSearch;
+      });
+
+      if (filteredTeams.length > 0) {
+        filteredTeams.forEach(team => {
+          const isAttended = team.attendedEvents && team.attendedEvents.some(id => id.toString() === selectedEventId.toString());
+          if (isAttended) attendedTeams++;
+
+          const statusBadge = isAttended 
+            ? '<span class="badge badge-active"><i class="fa-solid fa-circle-check"></i> Checked In</span>'
+            : '<span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Absent</span>';
+
+          const actionBtn = isAttended
+            ? `<button class="btn btn-secondary btn-xs" style="color: var(--rose); border-color: rgba(244,63,94,0.2);" onclick="toggleAttendance('${team._id}', false)">
+                 <i class="fa-solid fa-user-xmark"></i> Uncheck
+               </button>`
+            : `<button class="btn btn-mint btn-xs" onclick="toggleAttendance('${team._id}', true)">
+                 <i class="fa-solid fa-user-check"></i> Check In
+               </button>`;
+
+          tbody.innerHTML += `
+            <tr id="roster-row-${team._id}">
+              <td>
+                <div style="font-weight: 600; font-size: 15px;">${team.name}</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Leader: ${team.leaderName} (${team.leaderEmail})</div>
+              </td>
+              <td>
+                <span style="font-size: 13px; color: var(--text-secondary); font-style: italic;">
+                  ${team.problemStatement || 'Not assigned'}
+                </span>
+              </td>
+              <td class="status-cell">${statusBadge}</td>
+              <td style="text-align: right;" class="action-cell">${actionBtn}</td>
+            </tr>
+          `;
+        });
+      } else {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px;">No teams registered for this event matching search criteria.</td></tr>`;
+      }
+
+      // Re-calculate stats for the event
+      // Count total attended teams for the entire eventTeams list (not just search-filtered ones)
+      let actualAttendedCount = eventTeams.filter(t => 
+        t.attendedEvents && t.attendedEvents.some(id => id.toString() === selectedEventId.toString())
+      ).length;
+
+      updateMetrics(totalTeams, actualAttendedCount);
+    }
+
+    function updateMetrics(total, attended) {
+      document.getElementById('total-teams-val').textContent = total;
+      document.getElementById('attended-teams-val').textContent = attended;
+      
+      const rate = total > 0 ? Math.round((attended / total) * 100) : 0;
+      document.getElementById('attendance-rate-val').textContent = `${rate}%`;
+      
+      const rateBar = document.getElementById('rate-bar');
+      rateBar.style.width = `${rate}%`;
+    }
+
+    function filterRoster() {
+      renderRoster();
+    }
+
+    async function toggleAttendance(teamId, checkIn) {
+      const row = document.getElementById(`roster-row-${teamId}`);
+      const actionCell = row.querySelector('.action-cell');
+      actionCell.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--mint);"></i>';
+
+      try {
+        let res;
+        if (checkIn) {
+          // Check in: Call POST /api/teams/:id/attend
+          res = await fetch(`/api/teams/${teamId}/attend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId: selectedEventId })
+          });
+        } else {
+          // Un-check: We need an API way to un-attend. Since there is no specific uncheck route, we can call PUT /api/teams/:id or create a custom way, or we can just send request to server.js
+          // Let's modify the team record directly if the backend supports PUT, or let's create a put/delete attendance endpoint.
+          // Wait! In server.js we have:
+          // app.post('/api/teams/:id/attend', async (req, res) => { ... })
+          // Let's see: in server.js, the post endpoint checks if the eventId is already in the list. If it isn't, it pushes it. If we call it, it won't duplicate.
+          // But to remove attendance, let's see how we can do it.
+          // Wait, is there a PUT route on teams? No!
+          // Let's check server.js. Is there a route to update team?
+          // Let's check server.js using grep search for '/api/teams/:id'.
+        }
+
+        // Wait! Let's build a clean mechanism to toggle checkin. If checkIn is false, we can write a clean PUT or route on backend, or we can let backend update.
+        // Let's look at server.js to check if we can modify the team's attendedEvents array.
+        // Wait! Let's check server.js if there is any team update route.
+      } catch (err) {
+        console.error('Error toggling attendance:', err);
+      }
+
+      // Let's check if the server has PUT route for team or if we need to implement it.
+      // Let's fetch updated data and re-render.
+    }
+
+    // Let's search server.js for app.put('/api/teams/:id') or similar.
+  </script>
+  <script>
+    // Helper to toggle checkin on server
+    async function toggleAttendance(teamId, checkIn) {
+      const row = document.getElementById(`roster-row-${teamId}`);
+      if (!row) return;
+
+      const actionCell = row.querySelector('.action-cell');
+      const originalHtml = actionCell.innerHTML;
+      actionCell.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--mint);"></i>';
+
+      try {
+        const res = await fetch(`/api/teams/${teamId}/attend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: selectedEventId, remove: !checkIn })
+        });
+
+        if (res.ok) {
+          // Refresh teams list from server
+          const teamsRes = await fetch('/api/teams');
+          allTeams = await teamsRes.json();
+          renderRoster();
+        } else {
+          const data = await res.json();
+          alert(data.error || 'Failed to update attendance.');
+          actionCell.innerHTML = originalHtml;
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error updating attendance.');
+        actionCell.innerHTML = originalHtml;
+      }
+    }
+
+    // Export checkins as CSV
+    function exportCSV() {
+      if (!selectedEventId) { alert('No event selected.'); return; }
+      
+      const eventObj = allEvents.find(e => e._id === selectedEventId);
+      const eventName = eventObj ? eventObj.title : 'Event';
+
+      const eventTeams = allTeams.filter(t => {
+        const evId = t.registeredEvent?._id || t.registeredEvent;
+        return evId?.toString() === selectedEventId.toString();
+      });
+
+      if (eventTeams.length === 0) { alert('No registered teams for this event.'); return; }
+
+      const headers = ['Team Name', 'Leader Name', 'Leader Email', 'Problem Statement', 'Status', 'Check-in Count'];
+      const rows = eventTeams.map(t => {
+        const isAttended = t.attendedEvents && t.attendedEvents.some(id => id.toString() === selectedEventId.toString());
+        return [
+          t.name,
+          t.leaderName,
+          t.leaderEmail,
+          t.problemStatement || 'Unassigned',
+          isAttended ? 'Checked In' : 'Absent',
+          t.attendedEvents ? t.attendedEvents.length : 0
+        ];
+      });
+
+      const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Attendance_Roster_${eventName.replace(/[^a-z0-9]/gi, '_')}.csv`;
+      a.click();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
