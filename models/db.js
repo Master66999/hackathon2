@@ -410,7 +410,8 @@ function seedInitialData(models) {
 
 // Connect Database Function
 async function connectDb() {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/clubpulse';
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://developer:3aWZwEdtZsf3Trln@ac-is4d5xg-shard-00-00.2weu66g.mongodb.net:27017,ac-is4d5xg-shard-00-01.2weu66g.mongodb.net:27017,ac-is4d5xg-shard-00-02.2weu66g.mongodb.net:27017/clubpulse?ssl=true&replicaSet=atlas-100zwf-shard-0&authSource=admin';
+  console.log('Connecting to URI:', mongoUri);
 
   // Object wrapping real Mongoose models so seedInitialData can use same interface
   const RealModels = {

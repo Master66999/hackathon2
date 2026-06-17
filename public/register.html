@@ -253,12 +253,12 @@
         banner.classList.add('active');
         banner.scrollIntoView({ behavior: 'smooth' });
 
-        const emailNote = data.emailSent 
-          ? `A confirmation email with this ticket was sent to <strong>${leaderEmail}</strong>.` 
-          : `Confirmation email could not be sent. Please save this QR code screenshot.`;
+        const emailNote = (data.emailSent || data.mockEmail)
+          ? `A confirmation email with the ticket and Gate Pass has been sent to all registered team members.` 
+          : `Confirmation emails could not be sent. Please save this QR code screenshot.`;
 
         document.getElementById('success-msg').innerHTML = 
-          `Your team <strong>${name}</strong> is registered! ${emailNote}`;
+          `Your team <strong>${name}</strong> is registered successfully! ${emailNote}`;
 
         // Display QR Code
         if (data.qrCode) {

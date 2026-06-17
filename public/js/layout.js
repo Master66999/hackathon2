@@ -83,6 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-comments"></i> Chat Mentor
           </a>
         </li>
+        <li class="sidebar-menu-item ${pageName === 'pitch-analyzer.html' ? 'active' : ''}">
+          <a href="pitch-analyzer.html">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Pitch Analyzer
+          </a>
+        </li>
         
         <li style="margin: 20px 0 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1.5px;">
           Public Portals
@@ -147,6 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'analytics.html': 'Analytics Hub',
           'reports.html': 'AI Reports & Forecasts',
           'scan.html': 'Camera Attendance Scanner',
+          'mentor.html': 'AI Chat Mentor',
+          'pitch-analyzer.html': 'AI Pitch & Deck Analyzer',
           'register.html': 'Hackathon Registration',
           'attend.html': 'Event Self Check-in'
         };

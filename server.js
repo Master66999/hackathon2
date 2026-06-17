@@ -9,7 +9,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ override: true });
 
 const db = require('./models/db');
 
@@ -38,52 +38,114 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
+    },
+    tls: {
+      rejectUnauthorized: false
     }
   });
 }
 
 // Helper: Send ticket email with QR code
+// Helper: Send ticket email with QR code and Gate Pass to all members
 async function sendTicketEmail(team, eventName, qrCodeDataUrl) {
+  const fs = require('fs');
+  
+  // Collect all recipients: leader and members
+  const recipients = [
+    { name: team.leaderName, email: team.leaderEmail },
+    ...((team.members || []).map(m => ({ name: m.name, email: m.email })))
+  ].filter(r => r.email && r.email.trim().length > 0);
+
+  const gatePassPath = path.join(__dirname, 'public', 'get-pass.jpg');
+  const attachments = [
+    { filename: 'ticket-qr.png', path: qrCodeDataUrl, cid: 'qrcode' }
+  ];
+  
+  // Attach gate pass if it exists on disk
+  let hasGatePass = false;
+  if (fs.existsSync(gatePassPath)) {
+    attachments.push({ filename: 'get-pass.jpg', path: gatePassPath, cid: 'gatepass' });
+    hasGatePass = true;
+  }
+
   if (!transporter) {
-    console.log(`[MOCK EMAIL] To: ${team.leaderEmail}`);
-    console.log(`Subject: Ticket Confirmation for ${eventName} - Team ${team.name}`);
-    console.log(`Body: Hi ${team.leaderName}, your team ${team.name} has registered for ${eventName}.`);
-    return { mock: true, sent: false };
+    recipients.forEach(r => {
+      console.log(`[MOCK EMAIL] To: ${r.email} (${r.name})`);
+      console.log(`Subject: Ticket & Gate Pass for ${eventName} - Team ${team.name}`);
+      console.log(`Body: Hi ${r.name}, your team ${team.name} (Team ID: ${team._id}) has registered for ${eventName}.`);
+    });
+    return { mock: true, sent: false, recipientsCount: recipients.length };
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: team.leaderEmail,
-    subject: `🎟️ Registration Ticket for ${eventName} - Team ${team.name}`,
-    html: `
-      <div style="background-color: #0d0e12; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; border-radius: 12px; border: 1px solid #3b3d4a; max-width: 500px; margin: auto;">
-        <h2 style="color: #00ffcc; border-bottom: 2px solid #a855f7; padding-bottom: 10px;">ClubPulse Registration Confirmation</h2>
-        <p>Hi <strong>${team.leaderName}</strong>,</p>
-        <p>Your team <strong>${team.name}</strong> is registered successfully for <strong>${eventName}</strong>!</p>
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0; text-align: center;">
-          <h4 style="margin: 0 0 10px 0; color: #fbbf24;">Your Access Ticket</h4>
-          <img src="cid:qrcode" alt="QR Code Ticket" style="width: 200px; height: 200px; border-radius: 8px; background: white; padding: 10px;" />
-          <p style="font-size: 12px; color: #a0aec0; margin-top: 10px;">Present this QR code during check-in.</p>
+  let sentCount = 0;
+  let errorCount = 0;
+  let lastError = null;
+
+  for (const r of recipients) {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: r.email,
+      subject: `🎟️ Access Pass & Ticket for ${eventName} - Team ${team.name}`,
+      html: `
+        <div style="background-color: #0d0e12; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; border-radius: 12px; border: 1px solid #3b3d4a; max-width: 500px; margin: auto;">
+          <h2 style="color: #00ffcc; border-bottom: 2px solid #a855f7; padding-bottom: 10px;">ClubPulse Registration Confirmation</h2>
+          <p>Hi <strong>${r.name}</strong>,</p>
+          <p>You and your team <strong>${team.name}</strong> are registered successfully for <strong>${eventName}</strong>!</p>
+          
+          <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
+            <table style="width: 100%; border-collapse: collapse; color: #cbd5e0; font-size: 14px;">
+              <tr>
+                <td style="padding: 4px 0; font-weight: bold; color: #a855f7; width: 100px;">Team Name:</td>
+                <td style="padding: 4px 0;">${team.name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; font-weight: bold; color: #a855f7;">Team ID:</td>
+                <td style="padding: 4px 0; font-family: monospace; font-size: 13px; color: #00ffcc;">${team._id}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; font-weight: bold; color: #a855f7;">Event:</td>
+                <td style="padding: 4px 0;">${eventName}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; color: #fbbf24;">Your Access Ticket</h4>
+            <img src="cid:qrcode" alt="QR Code Ticket" style="width: 200px; height: 200px; border-radius: 8px; background: white; padding: 10px;" />
+            <p style="font-size: 12px; color: #a0aec0; margin-top: 10px;">Present this QR code during check-in.</p>
+          </div>
+
+          ${hasGatePass ? `
+          <div style="margin: 20px 0; text-align: center;">
+            <h4 style="margin: 0 0 10px 0; color: #00ffcc; text-transform: uppercase; letter-spacing: 1px;">Your Hackathon Gate Pass</h4>
+            <img src="cid:gatepass" alt="Hackathon Gate Pass" style="width: 100%; max-width: 400px; border-radius: 10px; border: 1px solid #3b3d4a; display: block; margin: 0 auto;" />
+          </div>
+          ` : ''}
+
+          <p>Members registered in team:</p>
+          <ul style="color: #cbd5e0; padding-left: 20px;">
+            <li><strong>${team.leaderName}</strong> (Leader - ${team.leaderEmail})</li>
+            ${team.members.map(m => `<li>${m.name} (${m.email})</li>`).join('')}
+          </ul>
+          <footer style="margin-top: 30px; border-top: 1px solid #1a1c24; padding-top: 15px; font-size: 11px; color: #718096; text-align: center;">
+            ClubPulse Dashboard - Powered by AI & Smart Operations
+          </footer>
         </div>
-        <p>Members registered:</p>
-        <ul style="color: #cbd5e0; padding-left: 20px;">
-          ${team.members.map(m => `<li>${m.name} (${m.email})</li>`).join('')}
-        </ul>
-        <footer style="margin-top: 30px; border-top: 1px solid #1a1c24; padding-top: 15px; font-size: 11px; color: #718096; text-align: center;">
-          ClubPulse Dashboard - Powered by AI & Smart Operations
-        </footer>
-      </div>
-    `,
-    attachments: [{ filename: 'ticket-qr.png', path: qrCodeDataUrl, cid: 'qrcode' }]
-  };
+      `,
+      attachments
+    };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    return { mock: false, sent: true };
-  } catch (error) {
-    console.error('Nodemailer error:', error);
-    return { mock: false, sent: false, error: error.message };
+    try {
+      await transporter.sendMail(mailOptions);
+      sentCount++;
+    } catch (error) {
+      console.error(`Nodemailer error sending to ${r.email}:`, error);
+      errorCount++;
+      lastError = error.message;
+    }
   }
+
+  return { mock: false, sent: sentCount > 0, sentCount, errorCount, error: lastError };
 }
 
 // ==========================================
@@ -807,6 +869,164 @@ How can I help you succeed today?`;
       }
     }
     res.json({ reply: responseText });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 9b. AI Pitch Analyzer & Deck Scorer
+app.post('/api/ai/pitch-analysis', authenticateToken, async (req, res) => {
+  try {
+    const { title, description, techStack, pitchScript, slideOutline } = req.body;
+    if (!title || !pitchScript) {
+      return res.status(400).json({ error: 'Project title and pitch script are required.' });
+    }
+
+    let responseJson = null;
+    if (openai) {
+      const promptText = `Act as an expert Hackathon Mentor and Venture Capital Pitch Coach. 
+Analyze the following project pitch and slide details:
+- Project Title: ${title}
+- Description: ${description || 'Not provided'}
+- Tech Stack: ${techStack || 'Not provided'}
+- Slide Outline/Details: ${slideOutline || 'Not provided'}
+- Pitch Script/Presentation Text: ${pitchScript}
+
+Provide a comprehensive pitch assessment. Respond ONLY with a valid JSON object matching the following structure (no markdown boxes, no wrapper, just raw JSON):
+{
+  "scores": {
+    "hook": 85,
+    "techDepth": 75,
+    "feasibility": 80,
+    "flow": 90,
+    "overall": 82
+  },
+  "feedback": {
+    "strengths": [
+      "Strength point 1",
+      "Strength point 2"
+    ],
+    "gaps": [
+      "Gap point 1",
+      "Gap point 2"
+    ],
+    "suggestions": [
+      "Improvement suggestion 1",
+      "Improvement suggestion 2"
+    ]
+  },
+  "refinedElevatorPitch": "A perfectly polished, compelling 100-word elevator pitch summarizing this project."
+}
+Return only JSON. Keep scores realistic and based on the input text. If the text is short or lacks detail, reflect it in lower scores and gap feedback. Ensure the scores are numbers (not strings).`;
+
+      const completion = await openai.chat.completions.create({
+        messages: [{ role: 'user', content: promptText }],
+        model: 'gpt-4o-mini',
+        response_format: { type: "json_object" }
+      });
+      
+      const content = completion.choices[0].message.content;
+      responseJson = JSON.parse(content);
+    } else {
+      // Smart Rule-based Fallback Generator
+      const scriptLower = pitchScript.toLowerCase();
+      const techLower = (techStack || '').toLowerCase();
+      const descLower = (description || '').toLowerCase();
+      
+      // Calculate scores dynamically based on content presence
+      let hookScore = 55;
+      if (pitchScript.length > 300) hookScore += 15;
+      if (scriptLower.includes('imagine') || scriptLower.includes('have you ever') || scriptLower.includes('problem') || scriptLower.includes('statist') || scriptLower.includes('percent')) {
+        hookScore += 20;
+      }
+      hookScore = Math.min(100, hookScore);
+
+      let techScore = 50;
+      if (techLower.length > 5) techScore += 15;
+      if (techLower.includes('react') || techLower.includes('node') || techLower.includes('express') || techLower.includes('mongodb') || techLower.includes('python') || techLower.includes('next.js') || techLower.includes('database') || techLower.includes('api')) {
+        techScore += 20;
+      }
+      if (scriptLower.includes('architecture') || scriptLower.includes('database') || scriptLower.includes('endpoint') || scriptLower.includes('model')) {
+        techScore += 10;
+      }
+      techScore = Math.min(100, techScore);
+
+      let feasibilityScore = 60;
+      if (pitchScript.length > 600) feasibilityScore += 10;
+      if (scriptLower.includes('mvp') || scriptLower.includes('prototype') || scriptLower.includes('limit') || scriptLower.includes('scope') || scriptLower.includes('future')) {
+        feasibilityScore += 15;
+      }
+      if (scriptLower.includes('blockchain') || scriptLower.includes('quantum') || scriptLower.includes('agi') || scriptLower.includes('everything')) {
+        feasibilityScore -= 10; // overly ambitious
+      }
+      feasibilityScore = Math.max(30, Math.min(100, feasibilityScore));
+
+      let flowScore = 50;
+      if (pitchScript.length > 200) flowScore += 15;
+      if (pitchScript.length > 500) flowScore += 15;
+      if (scriptLower.includes('first') || scriptLower.includes('then') || scriptLower.includes('finally') || scriptLower.includes('conclude') || scriptLower.includes('thank you')) {
+        flowScore += 15;
+      }
+      flowScore = Math.min(100, flowScore);
+
+      const overallScore = Math.round((hookScore + techScore + feasibilityScore + flowScore) / 4);
+
+      // Generate context-based feedback
+      const strengths = [];
+      const gaps = [];
+      const suggestions = [];
+
+      // Strengths
+      if (pitchScript.length > 500) {
+        strengths.push("Comprehensive script length providing context and detail.");
+      } else {
+        strengths.push("Concise presentation structure that respects the time limit.");
+      }
+      if (techLower.length > 5) {
+        strengths.push(`Clearly identified tech stack: ${techStack}.`);
+      }
+      if (hookScore > 70) {
+        strengths.push("Engaging hook that directly addresses a problem or paints a scenario.");
+      } else {
+        strengths.push("Good focus on the core value proposition.");
+      }
+
+      // Gaps
+      if (pitchScript.length < 200) {
+        gaps.push("Pitch script is too brief; lacks depth and explanation of execution.");
+      }
+      if (!techStack || techStack.length < 3) {
+        gaps.push("Missing tech stack specifications or explanation of implementation tools.");
+      }
+      if (feasibilityScore < 65) {
+        gaps.push("Lacks clarity on what is fully functional for the MVP vs future scope.");
+      }
+      if (gaps.length === 0) {
+        gaps.push("Could provide more business viability and target user demographics.");
+      }
+
+      // Suggestions
+      if (pitchScript.length < 250) {
+        suggestions.push("Expand the script to address the user experience and explain the demo flow.");
+      }
+      if (techScore < 70) {
+        suggestions.push("Explain *why* this specific stack was chosen over alternatives (e.g. speed, offline support).");
+      }
+      if (flowScore < 70) {
+        suggestions.push("Structure the pitch chronologically: Hook ➔ Problem ➔ Solution ➔ Demo ➔ Tech Stack ➔ Team.");
+      }
+      suggestions.push("Practice the pacing to ensure you complete the demo with at least 30 seconds left for Q&A.");
+
+      const elevatorPitch = `Meet ${title}: a smart solution engineered to solve ${description ? description.slice(0, 80) + '...' : 'a key workflow issue'} using ${techStack || 'a modern tech stack'}. By focusing on feasibility and a seamless user experience, our prototype delivers high impact right out of the box, resolving latency issues and offering a clean interface. We've built this as an MVP ready to scale, ensuring that the primary user pain points are resolved during the hackathon demo.`;
+
+      responseJson = {
+        scores: { hook: hookScore, techDepth: techScore, feasibility: feasibilityScore, flow: flowScore, overall: overallScore },
+        feedback: { strengths, gaps, suggestions },
+        refinedElevatorPitch: elevatorPitch
+      };
+    }
+
+    res.json(responseJson);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
