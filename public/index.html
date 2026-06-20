@@ -11,45 +11,121 @@
 <body>
   <div class="app-container">
     <div class="content-body">
+      <!-- Welcome Header -->
+      <div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h2 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px;">Welcome back, <span id="welcome-username" style="background: linear-gradient(135deg, var(--rose), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Admin</span> 👋</h2>
+          <p style="color: var(--text-secondary); font-size: 14px;">Here is the pulse of your hackathon club today.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <a href="events.html" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> New Event</a>
+          <a href="members.html" class="btn btn-secondary btn-sm"><i class="fa-solid fa-user-plus"></i> Add Member</a>
+        </div>
+      </div>
+
+      <!-- AI Insights Panel -->
+      <div class="ai-insights-panel" id="ai-insights">
+        <div class="ai-insights-content">
+          <div class="ai-insights-icon">
+            <i class="fa-solid fa-sparkles"></i>
+          </div>
+          <div class="ai-insights-text">
+            <h4>AI Pulse Insight</h4>
+            <p>Your club has seen a 14% increase in task completion rate this week. Outstanding momentum!</p>
+          </div>
+        </div>
+        <div class="ai-insights-close" onclick="document.getElementById('ai-insights').style.display='none'">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+      </div>
+
       <!-- Stats Grid -->
       <div class="stats-grid">
-        <div class="card metric-card metric-mint">
-          <div class="metric-info">
-            <h4>Total Members</h4>
-            <div class="value" id="stat-members">0</div>
+        <!-- Total Members Card -->
+        <div class="card metric-card metric-rose">
+          <div class="metric-card-top">
+            <div class="metric-info">
+              <h4>Total Members</h4>
+              <div class="value" id="stat-members">0</div>
+            </div>
+            <div class="metric-icon">
+              <i class="fa-solid fa-users"></i>
+            </div>
           </div>
-          <div class="metric-icon">
-            <i class="fa-solid fa-users"></i>
+          <div class="metric-progress-wrapper">
+            <div class="metric-progress-bg">
+              <div class="metric-progress-fill" style="width: 85%;"></div>
+            </div>
+            <div class="metric-progress-details">
+              <span>Active Members</span>
+              <span>85% Rate</span>
+            </div>
           </div>
         </div>
 
+        <!-- Total Participants Card -->
         <div class="card metric-card metric-violet">
-          <div class="metric-info">
-            <h4>Total Participants</h4>
-            <div class="value" id="stat-participants">0</div>
+          <div class="metric-card-top">
+            <div class="metric-info">
+              <h4>Total Participants</h4>
+              <div class="value" id="stat-participants">0</div>
+            </div>
+            <div class="metric-icon">
+              <i class="fa-solid fa-people-group"></i>
+            </div>
           </div>
-          <div class="metric-icon">
-            <i class="fa-solid fa-people-group"></i>
+          <div class="metric-progress-wrapper">
+            <div class="metric-progress-bg">
+              <div class="metric-progress-fill" style="width: 72%;"></div>
+            </div>
+            <div class="metric-progress-details">
+              <span>Team Registrants</span>
+              <span>72% Capacity</span>
+            </div>
           </div>
         </div>
 
+        <!-- Task Completion Card -->
         <div class="card metric-card metric-gold">
-          <div class="metric-info">
-            <h4>Task Completion %</h4>
-            <div class="value" id="stat-tasks">0%</div>
+          <div class="metric-card-top">
+            <div class="metric-info">
+              <h4>Task Completion</h4>
+              <div class="value" id="stat-tasks">0%</div>
+            </div>
+            <div class="metric-icon">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
           </div>
-          <div class="metric-icon">
-            <i class="fa-solid fa-list-check"></i>
+          <div class="metric-progress-wrapper">
+            <div class="metric-progress-bg">
+              <div class="metric-progress-fill" id="stat-tasks-progress" style="width: 0%;"></div>
+            </div>
+            <div class="metric-progress-details">
+              <span>Task Progress</span>
+              <span>100% Target</span>
+            </div>
           </div>
         </div>
 
-        <div class="card metric-card metric-violet">
-          <div class="metric-info">
-            <h4>Attendance Rate</h4>
-            <div class="value" id="stat-attendance">0%</div>
+        <!-- Attendance Rate Card -->
+        <div class="card metric-card metric-rose">
+          <div class="metric-card-top">
+            <div class="metric-info">
+              <h4>Attendance Rate</h4>
+              <div class="value" id="stat-attendance">0%</div>
+            </div>
+            <div class="metric-icon">
+              <i class="fa-solid fa-clipboard-user"></i>
+            </div>
           </div>
-          <div class="metric-icon">
-            <i class="fa-solid fa-clipboard-user"></i>
+          <div class="metric-progress-wrapper">
+            <div class="metric-progress-bg">
+              <div class="metric-progress-fill" id="stat-attendance-progress" style="width: 0%;"></div>
+            </div>
+            <div class="metric-progress-details">
+              <span>Attendance Rate</span>
+              <span>90% Target</span>
+            </div>
           </div>
         </div>
       </div>
@@ -57,9 +133,12 @@
       <!-- Main Visualizations & Leaderboard -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;">
         <div class="card" style="grid-column: span 2;">
-          <div class="card-title">
+          <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span>Monthly Event Attendance</span>
-            <i class="fa-solid fa-chart-line" style="color: var(--mint);"></i>
+            <div style="display: flex; gap: 8px;">
+              <button class="filter-pill active" style="padding: 4px 10px; font-size: 11px;">Line</button>
+              <button class="filter-pill" style="padding: 4px 10px; font-size: 11px;" id="btn-chart-bar">Bar</button>
+            </div>
           </div>
           <div style="height: 300px; position: relative;">
             <canvas id="attendanceChart"></canvas>
@@ -69,7 +148,7 @@
         <div class="card">
           <div class="card-title">
             <span>Club Performance Metrics</span>
-            <i class="fa-solid fa-chart-pie" style="color: var(--violet);"></i>
+            <i class="fa-solid fa-chart-pie" style="color: var(--rose);"></i>
           </div>
           <div style="height: 300px; position: relative; display: flex; align-items: center; justify-content: center;">
             <canvas id="performanceChart"></canvas>
@@ -82,7 +161,7 @@
         <div class="card">
           <div class="card-title">
             <span>Top Members Leaderboard</span>
-            <a href="members.html" style="font-size: 12px; color: var(--violet); font-weight: 600;">View All <i class="fa-solid fa-arrow-right"></i></a>
+            <a href="members.html" style="font-size: 12px; color: var(--rose); font-weight: 600;">View All <i class="fa-solid fa-arrow-right"></i></a>
           </div>
           <div class="leaderboard-list" id="leaderboard-list">
             <!-- Dynamic items -->
@@ -93,7 +172,7 @@
         <div class="card">
           <div class="card-title">
             <span>Upcoming Club Events</span>
-            <a href="events.html" style="font-size: 12px; color: var(--mint); font-weight: 600;">View All <i class="fa-solid fa-arrow-right"></i></a>
+            <a href="events.html" style="font-size: 12px; color: var(--rose); font-weight: 600;">View All <i class="fa-solid fa-arrow-right"></i></a>
           </div>
           <div style="display: flex; flex-direction: column; gap: 16px;" id="upcoming-events-list">
             <!-- Dynamic events -->
@@ -107,7 +186,7 @@
             <i class="fa-solid fa-clock-rotate-left" style="color: var(--gold);"></i>
           </div>
           <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: var(--text-secondary);" id="activity-log">
-            <div style="display: flex; gap: 10px; border-left: 2px solid var(--mint); padding-left: 10px; margin-bottom: 2px;">
+            <div style="display: flex; gap: 10px; border-left: 2px solid var(--rose); padding-left: 10px; margin-bottom: 2px;">
               <div>
                 <strong style="color: var(--text-primary);">PulseHack 2026</strong> registration open for public team signups.
                 <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Just now</div>
@@ -140,14 +219,36 @@
   <script src="js/layout.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // 0. Update welcome greeting username dynamically
+      const user = window.AuthHelper ? window.AuthHelper.getUser() : null;
+      if (user && user.name) {
+        document.getElementById('welcome-username').textContent = user.name.split(' ')[0];
+      } else {
+        const storedUser = localStorage.getItem('cp_user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            if (parsed.name) {
+              document.getElementById('welcome-username').textContent = parsed.name.split(' ')[0];
+            }
+          } catch {}
+        }
+      }
+
       // 1. Fetch Dashboard Stats
       fetch('/api/stats')
         .then(res => res.json())
         .then(data => {
           document.getElementById('stat-members').textContent = data.totalMembers;
           document.getElementById('stat-participants').textContent = data.totalParticipants;
+          
           document.getElementById('stat-tasks').textContent = data.taskCompletionRate + '%';
+          const tasksProgress = document.getElementById('stat-tasks-progress');
+          if (tasksProgress) tasksProgress.style.width = data.taskCompletionRate + '%';
+
           document.getElementById('stat-attendance').textContent = data.attendanceRate + '%';
+          const attProgress = document.getElementById('stat-attendance-progress');
+          if (attProgress) attProgress.style.width = data.attendanceRate + '%';
 
           // Render Upcoming Events List
           const eventsContainer = document.getElementById('upcoming-events-list');
@@ -158,14 +259,14 @@
               const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
               
               eventsContainer.innerHTML += `
-                <div style="padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div style="padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(255, 0, 127, 0.15)'" onmouseout="this.style.borderColor='var(--border-color)'">
                   <div>
                     <h5 style="margin-bottom: 4px; font-weight: 600;">${event.title}</h5>
-                    <span style="font-size: 11px; color: var(--text-secondary);"><i class="fa-solid fa-location-dot"></i> ${event.location}</span>
+                    <span style="font-size: 11px; color: var(--text-secondary);"><i class="fa-solid fa-location-dot" style="color: var(--rose);"></i> ${event.location}</span>
                   </div>
                   <div style="text-align: right;">
-                    <div style="font-size: 12px; font-weight: 700; color: var(--mint);">${formattedDate}</div>
-                    <span class="badge badge-upcoming" style="padding: 2px 6px; font-size: 8px; margin-top: 4px;">${event.type}</span>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--rose);">${formattedDate}</div>
+                    <span class="badge badge-upcoming" style="padding: 2px 8px; font-size: 8px; margin-top: 6px;">${event.type}</span>
                   </div>
                 </div>
               `;
@@ -209,53 +310,75 @@
         })
         .catch(err => console.error('Error fetching leaderboard:', err));
 
-      // 3. Fetch & Render Monthly Attendance Chart
+      // 3. Fetch & Render Monthly Attendance Chart (Line/Bar toggleable)
       fetch('/api/events/stats/monthly-attendance')
         .then(res => res.json())
         .then(data => {
           const months = Object.keys(data);
           const counts = Object.values(data);
           
-          const ctx = document.getElementById('attendanceChart').getContext('2d');
-          new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: months,
-              datasets: [{
-                label: 'Event Attendance',
-                data: counts,
-                borderColor: '#00f2fe',
-                backgroundColor: 'rgba(0, 242, 254, 0.05)',
-                borderWidth: 3,
-                tension: 0.35,
-                fill: true,
-                pointBackgroundColor: '#00f2fe',
-                pointHoverRadius: 8
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false }
+          let myChart = null;
+
+          const renderChart = (type) => {
+            if (myChart) myChart.destroy();
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            myChart = new Chart(ctx, {
+              type: type,
+              data: {
+                labels: months,
+                datasets: [{
+                  label: 'Event Attendance',
+                  data: counts,
+                  borderColor: '#ff007f',
+                  backgroundColor: type === 'line' ? 'rgba(255, 0, 127, 0.05)' : 'rgba(255, 0, 127, 0.65)',
+                  borderWidth: 3,
+                  tension: 0.35,
+                  fill: type === 'line',
+                  pointBackgroundColor: '#ff007f',
+                  pointHoverRadius: 8
+                }]
               },
-              scales: {
-                x: {
-                  grid: { color: 'rgba(255, 255, 255, 0.04)' },
-                  ticks: { color: '#64748b' }
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false }
                 },
-                y: {
-                  grid: { color: 'rgba(255, 255, 255, 0.04)' },
-                  ticks: { color: '#64748b', stepSize: 20 },
-                  beginAtZero: true
+                scales: {
+                  x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    ticks: { color: '#64748b' }
+                  },
+                  y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    ticks: { color: '#64748b', stepSize: 20 },
+                    beginAtZero: true
+                  }
                 }
               }
-            }
-          });
+            });
+          };
+
+          renderChart('line');
+
+          const btnLine = document.querySelector('.card-title .filter-pill:nth-child(1)');
+          const btnBar = document.getElementById('btn-chart-bar');
+          if (btnLine && btnBar) {
+            btnLine.addEventListener('click', () => {
+              btnLine.classList.add('active');
+              btnBar.classList.remove('active');
+              renderChart('line');
+            });
+            btnBar.addEventListener('click', () => {
+              btnBar.classList.add('active');
+              btnLine.classList.remove('active');
+              renderChart('bar');
+            });
+          }
         })
         .catch(err => console.error('Error loading line chart:', err));
 
-      // 4. Render Club Performance Doughnut Chart (static breakdown for visuals)
+      // 4. Render Club Performance Doughnut Chart
       const performanceCtx = document.getElementById('performanceChart').getContext('2d');
       new Chart(performanceCtx, {
         type: 'doughnut',
@@ -263,9 +386,9 @@
           labels: ['Completed Tasks', 'Pending Tasks', 'Attendance Rate', 'Engagement Target'],
           datasets: [{
             data: [45, 15, 25, 15],
-            backgroundColor: ['#8b5cf6', '#ff3366', '#00f2fe', '#f59e0b'],
+            backgroundColor: ['#9d4edd', '#ff007f', '#00f5d4', '#ff9e00'],
             borderWidth: 0,
-            hoverOffset: 4
+            hoverOffset: 6
           }]
         },
         options: {
@@ -275,7 +398,7 @@
             legend: {
               position: 'bottom',
               labels: {
-                color: '#cbd5e0',
+                color: '#cbd5e1',
                 padding: 15,
                 font: { family: 'Outfit', size: 11 }
               }
