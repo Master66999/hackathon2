@@ -47,55 +47,56 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
 
 // Helper: Send ticket email with QR code
 // Helper: Send ticket email with QR code and Gate Pass to all members
-async function sendTicketEmail(team, eventName, qrCodeDataUrl) {
+async function sendTicketEmail(team, eventName, tickets) {
   const fs = require('fs');
-  
-  // Collect all recipients: leader and members
-  const recipients = [
-    { name: team.leaderName, email: team.leaderEmail },
-    ...((team.members || []).map(m => ({ name: m.name, email: m.email })))
-  ].filter(r => r.email && r.email.trim().length > 0);
-
   const gatePassPath = path.join(__dirname, 'public', 'get-pass.jpg');
-  const attachments = [
-    { filename: 'ticket-qr.png', path: qrCodeDataUrl, cid: 'qrcode' }
-  ];
   
-  // Attach gate pass if it exists on disk
-  let hasGatePass = false;
-  if (fs.existsSync(gatePassPath)) {
-    attachments.push({ filename: 'get-pass.jpg', path: gatePassPath, cid: 'gatepass' });
-    hasGatePass = true;
-  }
-
   if (!transporter) {
-    recipients.forEach(r => {
-      console.log(`[MOCK EMAIL] To: ${r.email} (${r.name})`);
-      console.log(`Subject: Ticket & Gate Pass for ${eventName} - Team ${team.name}`);
-      console.log(`Body: Hi ${r.name}, your team ${team.name} (Team ID: ${team._id}) has registered for ${eventName}.`);
+    tickets.forEach(t => {
+      console.log(`[MOCK EMAIL] To: ${t.email} (${t.name})`);
+      console.log(`Subject: Personalized Pass & Ticket for ${eventName} - ${t.name}`);
+      console.log(`Body: Hi ${t.name}, you are registered as ${t.role} of team ${team.name} in ${eventName}.`);
     });
-    return { mock: true, sent: false, recipientsCount: recipients.length };
+    return { mock: true, sent: false, recipientsCount: tickets.length };
   }
 
   let sentCount = 0;
   let errorCount = 0;
   let lastError = null;
 
-  for (const r of recipients) {
+  for (const t of tickets) {
+    if (!t.email || t.email.trim().length === 0) continue;
+
+    const attachments = [
+      { filename: 'ticket-qr.png', path: t.qrCode, cid: 'qrcode' }
+    ];
+    
+    // Attach gate pass if it exists on disk
+    let hasGatePass = false;
+    if (fs.existsSync(gatePassPath)) {
+      attachments.push({ filename: 'get-pass.jpg', path: gatePassPath, cid: 'gatepass' });
+      hasGatePass = true;
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: r.email,
-      subject: `🎟️ Access Pass & Ticket for ${eventName} - Team ${team.name}`,
+      to: t.email,
+      subject: `🎟️ Personalized ID Card & Gate Pass for ${eventName} - ${t.name}`,
       html: `
         <div style="background-color: #0d0e12; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; border-radius: 12px; border: 1px solid #3b3d4a; max-width: 500px; margin: auto;">
-          <h2 style="color: #00ffcc; border-bottom: 2px solid #a855f7; padding-bottom: 10px;">ClubPulse Registration Confirmation</h2>
-          <p>Hi <strong>${r.name}</strong>,</p>
+          <h2 style="color: #00ffcc; border-bottom: 2px solid #a855f7; padding-bottom: 10px;">ClubPulse Gate Pass</h2>
+          <p>Hi <strong>${t.name}</strong>,</p>
           <p>You and your team <strong>${team.name}</strong> are registered successfully for <strong>${eventName}</strong>!</p>
+          <p>Here is your personalized access ticket and gate pass. Please keep this email or screenshot the pass for fast check-in at the entrance.</p>
           
           <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
             <table style="width: 100%; border-collapse: collapse; color: #cbd5e0; font-size: 14px;">
               <tr>
-                <td style="padding: 4px 0; font-weight: bold; color: #a855f7; width: 100px;">Team Name:</td>
+                <td style="padding: 4px 0; font-weight: bold; color: #a855f7; width: 120px;">Participant:</td>
+                <td style="padding: 4px 0;">${t.name} (${t.role})</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; font-weight: bold; color: #a855f7;">Team Name:</td>
                 <td style="padding: 4px 0;">${team.name}</td>
               </tr>
               <tr>
@@ -103,30 +104,32 @@ async function sendTicketEmail(team, eventName, qrCodeDataUrl) {
                 <td style="padding: 4px 0; font-family: monospace; font-size: 13px; color: #00ffcc;">${team._id}</td>
               </tr>
               <tr>
-                <td style="padding: 4px 0; font-weight: bold; color: #a855f7;">Event:</td>
+                <td style="padding: 4px 0; font-weight: bold; color: #a855f7;">Event Name:</td>
                 <td style="padding: 4px 0;">${eventName}</td>
               </tr>
             </table>
           </div>
 
           <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0; text-align: center;">
-            <h4 style="margin: 0 0 10px 0; color: #fbbf24;">Your Access Ticket</h4>
+            <h4 style="margin: 0 0 10px 0; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px;">Your Access QR Ticket</h4>
             <img src="cid:qrcode" alt="QR Code Ticket" style="width: 200px; height: 200px; border-radius: 8px; background: white; padding: 10px;" />
-            <p style="font-size: 12px; color: #a0aec0; margin-top: 10px;">Present this QR code during check-in.</p>
+            <p style="font-size: 12px; color: #a0aec0; margin-top: 10px;">Scan at the registration counter.</p>
           </div>
 
           ${hasGatePass ? `
           <div style="margin: 20px 0; text-align: center;">
             <h4 style="margin: 0 0 10px 0; color: #00ffcc; text-transform: uppercase; letter-spacing: 1px;">Your Hackathon Gate Pass</h4>
             <img src="cid:gatepass" alt="Hackathon Gate Pass" style="width: 100%; max-width: 400px; border-radius: 10px; border: 1px solid #3b3d4a; display: block; margin: 0 auto;" />
+            <p style="font-size: 11px; color: #a0aec0; margin-top: 8px;">(Personalized physical pass card can be downloaded from the registration page)</p>
           </div>
           ` : ''}
 
-          <p>Members registered in team:</p>
-          <ul style="color: #cbd5e0; padding-left: 20px;">
-            <li><strong>${team.leaderName}</strong> (Leader - ${team.leaderEmail})</li>
-            ${team.members.map(m => `<li>${m.name} (${m.email})</li>`).join('')}
+          <p style="font-size: 13px; color: #cbd5e0;">Team Members:</p>
+          <ul style="color: #a0aec0; padding-left: 20px; font-size: 13px;">
+            <li><strong>${team.leaderName}</strong> (Leader)</li>
+            ${team.members.map(m => `<li>${m.name}</li>`).join('')}
           </ul>
+          
           <footer style="margin-top: 30px; border-top: 1px solid #1a1c24; padding-top: 15px; font-size: 11px; color: #718096; text-align: center;">
             ClubPulse Dashboard - Powered by AI & Smart Operations
           </footer>
@@ -139,7 +142,7 @@ async function sendTicketEmail(team, eventName, qrCodeDataUrl) {
       await transporter.sendMail(mailOptions);
       sentCount++;
     } catch (error) {
-      console.error(`Nodemailer error sending to ${r.email}:`, error);
+      console.error(`Nodemailer error sending to ${t.email}:`, error);
       errorCount++;
       lastError = error.message;
     }
@@ -475,7 +478,7 @@ app.get('/api/teams', authenticateToken, async (req, res) => {
 
 app.post('/api/teams/register', async (req, res) => {
   try {
-    const { name, leaderName, leaderEmail, members, registeredEvent } = req.body;
+    const { name, leaderName, leaderEmail, members, registeredEvent, college } = req.body;
     const event = await db.Event.findById(registeredEvent);
     if (!event) return res.status(404).json({ error: 'Target Event not found' });
 
@@ -483,15 +486,68 @@ app.post('/api/teams/register', async (req, res) => {
       name, leaderName, leaderEmail,
       members: members || [],
       registeredEvent,
+      college: college || 'N/A',
       attendedEvents: [],
       userId: event.userId // Inherit userId from event
     });
 
-    const qrData = JSON.stringify({ teamId: newTeam._id, eventId: event._id, teamName: newTeam.name, eventName: event.title });
-    const qrCodeDataUrl = await qrcode.toDataURL(qrData);
-    const emailResult = await sendTicketEmail(newTeam, event.title, qrCodeDataUrl);
+    const tickets = [];
+    const teamIdHex = newTeam._id.toString().toUpperCase();
+    const teamIdShort = teamIdHex.slice(-6);
 
-    res.status(201).json({ message: 'Team registered successfully', team: newTeam, qrCode: qrCodeDataUrl, emailSent: emailResult.sent, mockEmail: emailResult.mock });
+    // Generate personalized QR code for leader
+    const leaderQrData = JSON.stringify({
+      teamId: newTeam._id,
+      eventId: event._id,
+      teamName: newTeam.name,
+      eventName: event.title,
+      participantName: newTeam.leaderName,
+      role: 'Leader'
+    });
+    const leaderQrCode = await qrcode.toDataURL(leaderQrData);
+    const leaderPartId = `CP-${teamIdShort}-01`;
+    tickets.push({
+      name: newTeam.leaderName,
+      email: newTeam.leaderEmail,
+      role: 'Leader',
+      qrCode: leaderQrCode,
+      participantId: leaderPartId,
+      college: newTeam.college
+    });
+
+    // Generate personalized QR codes for each team member
+    let idx = 2;
+    for (const m of (newTeam.members || [])) {
+      const memberQrData = JSON.stringify({
+        teamId: newTeam._id,
+        eventId: event._id,
+        teamName: newTeam.name,
+        eventName: event.title,
+        participantName: m.name,
+        role: 'Member'
+      });
+      const memberQrCode = await qrcode.toDataURL(memberQrData);
+      const memberPartId = `CP-${teamIdShort}-${idx < 10 ? '0' + idx : idx}`;
+      tickets.push({
+        name: m.name,
+        email: m.email,
+        role: 'Member',
+        qrCode: memberQrCode,
+        participantId: memberPartId,
+        college: newTeam.college
+      });
+      idx++;
+    }
+
+    const emailResult = await sendTicketEmail(newTeam, event.title, tickets);
+
+    res.status(201).json({ 
+      message: 'Team registered successfully', 
+      team: newTeam, 
+      tickets, 
+      emailSent: emailResult.sent, 
+      mockEmail: emailResult.mock 
+    });
   } catch (error) { res.status(400).json({ error: error.message }); }
 });
 

@@ -13,6 +13,7 @@ const teamSchema = new mongoose.Schema({
   ],
   problemStatement: { type: String, default: '' },
   registeredEvent: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
+  college: { type: String, default: '' },
   attendedEvents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }],
   performanceGrade: { type: Number, default: 0 },
   performanceFeedback: { type: String, default: '' }
