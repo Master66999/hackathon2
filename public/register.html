@@ -220,6 +220,126 @@
           margin-bottom: 0 !important;
         }
       }
+
+      /* Wizard Steps Progress styling */
+      .steps-progress-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 35px;
+        position: relative;
+      }
+      .step-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+        position: relative;
+        cursor: pointer;
+      }
+      .step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(15, 23, 42, 0.04);
+        border: 2px solid var(--border-color);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        transition: all var(--transition-fast);
+      }
+      .step-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-top: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all var(--transition-fast);
+      }
+      .step-line {
+        flex: 1;
+        height: 2px;
+        background: var(--border-color);
+        margin: 0 8px;
+        transform: translateY(-13px);
+        transition: all var(--transition-fast);
+      }
+      .step-indicator.active .step-num {
+        background: linear-gradient(135deg, var(--violet), var(--mint));
+        border-color: transparent;
+        color: #ffffff;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+      }
+      .step-indicator.active .step-label {
+        color: var(--violet);
+        font-weight: 700;
+      }
+      .step-indicator.completed .step-num {
+        background: var(--mint-glow);
+        border-color: var(--mint);
+        color: var(--mint);
+      }
+      .step-indicator.completed .step-label {
+        color: var(--mint);
+      }
+      .step-line.active {
+        background: var(--mint);
+      }
+
+      /* Step Pane display styling */
+      .form-step-pane {
+        display: none;
+        animation: slideIn 0.3s ease-out;
+      }
+      .form-step-pane.active {
+        display: block;
+      }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Navigation buttons layout */
+      .wizard-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 24px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 20px;
+      }
+
+      /* Summary display in Step 4 */
+      .summary-card {
+        background: rgba(16, 185, 129, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 20px;
+      }
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.05);
+        font-size: 13px;
+      }
+      .summary-item:last-child {
+        border-bottom: none;
+      }
+      .summary-label {
+        color: var(--text-secondary);
+        font-weight: 600;
+      }
+      .summary-val {
+        color: var(--text-primary);
+        font-weight: 700;
+        text-align: right;
+      }
     </style>
 </head>
 <body style="background: var(--bg-main);">
@@ -234,56 +354,156 @@
       </p>
 
       <div class="card" id="form-card" style="border-color: var(--border-color);">
+        <!-- Wizard Progress Bar -->
+        <div class="steps-progress-container">
+          <div class="step-indicator active" id="step-ind-1" onclick="goToStep(1)">
+            <div class="step-num">1</div>
+            <div class="step-label">Event</div>
+          </div>
+          <div class="step-line" id="step-line-1"></div>
+          <div class="step-indicator" id="step-ind-2" onclick="goToStep(2)">
+            <div class="step-num">2</div>
+            <div class="step-label">Leader</div>
+          </div>
+          <div class="step-line" id="step-line-2"></div>
+          <div class="step-indicator" id="step-ind-3" onclick="goToStep(3)">
+            <div class="step-num">3</div>
+            <div class="step-label">Members</div>
+          </div>
+          <div class="step-line" id="step-line-3"></div>
+          <div class="step-indicator" id="step-ind-4" onclick="goToStep(4)">
+            <div class="step-num">4</div>
+            <div class="step-label">Review</div>
+          </div>
+        </div>
+
         <form id="register-form" onsubmit="submitRegistration(event)">
-          <!-- SECTION 1: Event Selection -->
-          <div class="step-divider" style="margin-top: 0;">Step 1 — Select Event</div>
-
-          <div class="form-group">
-            <label for="reg-event">Choose Hackathon or Competition Event</label>
-            <select id="reg-event" class="form-control" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
-              <option value="">Loading available events...</option>
-            </select>
-          </div>
-
-          <!-- SECTION 2: Leader Details -->
-          <div class="step-divider">Step 2 — Team Leader Details</div>
-
-          <div class="form-group">
-            <label for="reg-team-name">Team Name</label>
-            <input type="text" id="reg-team-name" class="form-control" placeholder="e.g. CyberNeura" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- STEP 1: Event Selection -->
+          <div class="form-step-pane active" id="step-pane-1">
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+              <i class="fa-solid fa-calendar-days" style="color: var(--mint); margin-right: 8px;"></i> Select Target Event
+            </h4>
             <div class="form-group">
-              <label for="reg-leader-name">Leader Full Name</label>
-              <input type="text" id="reg-leader-name" class="form-control" placeholder="e.g. Devon Patel" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+              <label for="reg-event" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Choose Hackathon or Competition Event</label>
+              <select id="reg-event" class="form-control" required style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+                <option value="">Loading available events...</option>
+              </select>
             </div>
-            <div class="form-group">
-              <label for="reg-leader-email">Leader Email</label>
-              <input type="email" id="reg-leader-email" class="form-control" placeholder="dev@email.com" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+            
+            <div class="wizard-buttons">
+              <div></div>
+              <button type="button" class="btn btn-primary btn-sm" onclick="nextStep(2)">
+                Next Step <i class="fa-solid fa-arrow-right"></i>
+              </button>
             </div>
           </div>
 
-          <div class="form-group" style="margin-top: 16px;">
-            <label for="reg-college">College / University Name</label>
-            <input type="text" id="reg-college" class="form-control" placeholder="e.g. Stanford University" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+          <!-- STEP 2: Team Leader Details -->
+          <div class="form-step-pane" id="step-pane-2">
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+              <i class="fa-solid fa-user-tie" style="color: var(--mint); margin-right: 8px;"></i> Team Leader Details
+            </h4>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="reg-team-name" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Team Name</label>
+              <input type="text" id="reg-team-name" class="form-control" placeholder="e.g. CyberNeura" required style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="reg-leader-name" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Leader Full Name</label>
+                <input type="text" id="reg-leader-name" class="form-control" placeholder="e.g. Devon Patel" required style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+              </div>
+              <div class="form-group">
+                <label for="reg-leader-email" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Leader Email</label>
+                <input type="email" id="reg-leader-email" class="form-control" placeholder="dev@email.com" required style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-college" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">College / University Name</label>
+              <input type="text" id="reg-college" class="form-control" placeholder="e.g. Stanford University" required style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+            </div>
+
+            <div class="wizard-buttons">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="prevStep(1)">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="nextStep(3)">
+                Next Step <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
           </div>
 
-          <!-- SECTION 3: Team Members -->
-          <div class="step-divider">Step 3 — Add Team Members</div>
+          <!-- STEP 3: Team Members -->
+          <div class="form-step-pane" id="step-pane-3">
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+              <i class="fa-solid fa-users" style="color: var(--mint); margin-right: 8px;"></i> Add Team Members
+            </h4>
+            
+            <div id="members-container" style="margin-bottom: 16px;">
+              <!-- Dynamic member rows will be inserted here -->
+            </div>
 
-          <div id="members-container">
-            <!-- Dynamic member rows will be inserted here -->
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addMemberRow()" style="width: 100%; margin-bottom: 20px; border-style: dashed; border-color: var(--border-glow); color: var(--violet);">
+              <i class="fa-solid fa-circle-plus"></i> Add Another Member
+            </button>
+
+            <div class="wizard-buttons">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="prevStep(2)">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="nextStep(4)">
+                Next Step <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
           </div>
 
-          <button type="button" class="btn btn-secondary" onclick="addMemberRow()" style="width: 100%; margin-bottom: 20px; border-style: dashed; border-color: var(--border-glow); color: var(--violet);">
-            <i class="fa-solid fa-circle-plus"></i> Add Another Member
-          </button>
+          <!-- STEP 4: Review Summary & Submit -->
+          <div class="form-step-pane" id="step-pane-4">
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+              <i class="fa-solid fa-clipboard-check" style="color: var(--mint); margin-right: 8px;"></i> Review Your Registration
+            </h4>
 
-          <!-- SECTION 4: Submit -->
-          <div class="step-divider">Step 4 — Confirm Registration</div>
-          <button type="submit" class="btn btn-mint" id="submit-btn" style="width: 100%; padding: 14px; font-size: 16px; border-radius: 12px;">
-            <i class="fa-solid fa-paper-plane"></i> Register Team & Get Ticket
-          </button>
+            <div class="summary-card">
+              <div class="summary-item">
+                <span class="summary-label">Target Event:</span>
+                <span class="summary-val" id="summary-event">N/A</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Team Name:</span>
+                <span class="summary-val" id="summary-team">N/A</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Leader Name:</span>
+                <span class="summary-val" id="summary-leader">N/A</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Leader Email:</span>
+                <span class="summary-val" id="summary-email">N/A</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">College/University:</span>
+                <span class="summary-val" id="summary-college">N/A</span>
+              </div>
+              <div class="summary-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                <span class="summary-label">Additional Members:</span>
+                <div style="font-weight: 700; font-size: 12px; color: var(--text-primary); width: 100%;" id="summary-members-list">None added</div>
+              </div>
+            </div>
+
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; text-align: center;">
+              🔒 Clicking register will lock details and generate your ticket. Confirmation emails are sent to all members.
+            </p>
+
+            <div class="wizard-buttons">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="prevStep(3)">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+              </button>
+              <button type="submit" class="btn btn-mint btn-sm" id="submit-btn">
+                <i class="fa-solid fa-paper-plane"></i> Register Team & Get Ticket
+              </button>
+            </div>
+          </div>
         </form>
       </div>
 
@@ -312,10 +532,12 @@
       </div>
 
       <!-- Quick Back Links -->
-      <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted);">
-        <a href="index.html" style="color: var(--violet); font-weight: 600;">← Back to Dashboard</a>
-        &nbsp;|&nbsp;
-        <a href="attend.html" style="color: var(--mint); font-weight: 600;">Self Check-in Page →</a>
+      <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted); display: flex; justify-content: center; gap: 12px;">
+        <a href="index.html" style="color: var(--violet); font-weight: 600;">← Dashboard</a>
+        <span style="color: var(--border-glow);">|</span>
+        <a href="marketing.html" style="color: var(--violet); font-weight: 600;"><i class="fa-solid fa-bullhorn"></i> Marketing Flyer</a>
+        <span style="color: var(--border-glow);">|</span>
+        <a href="attend.html" style="color: var(--mint); font-weight: 600;">Self Check-in →</a>
       </div>
     </div>
   </div>
@@ -328,6 +550,128 @@
     document.head.appendChild(link);
   </script>
   <script>
+    let currentStep = 1;
+
+    function showStep(step) {
+      document.querySelectorAll('.form-step-pane').forEach(p => p.classList.remove('active'));
+      document.getElementById('step-pane-' + step).classList.add('active');
+
+      for (let i = 1; i <= 4; i++) {
+        const ind = document.getElementById('step-ind-' + i);
+        const line = document.getElementById('step-line-' + (i - 1));
+
+        if (i < step) {
+          ind.classList.remove('active');
+          ind.classList.add('completed');
+          if (line) line.classList.add('active');
+        } else if (i === step) {
+          ind.classList.add('active');
+          ind.classList.remove('completed');
+          if (line) line.classList.remove('active');
+        } else {
+          ind.classList.remove('active', 'completed');
+          if (line) line.classList.remove('active');
+        }
+      }
+      currentStep = step;
+    }
+
+    function validateStep(step) {
+      if (step === 1) {
+        const eventInput = document.getElementById('reg-event');
+        if (!eventInput.value) {
+          eventInput.reportValidity();
+          return false;
+        }
+      } else if (step === 2) {
+        const fields = ['reg-team-name', 'reg-leader-name', 'reg-leader-email', 'reg-college'];
+        for (const id of fields) {
+          const el = document.getElementById(id);
+          if (!el.checkValidity()) {
+            el.reportValidity();
+            return false;
+          }
+        }
+      } else if (step === 3) {
+        const memberRows = document.querySelectorAll('.member-row');
+        let valid = true;
+        memberRows.forEach(row => {
+          const name = row.querySelector('.member-name');
+          const email = row.querySelector('.member-email');
+          if (name.value && !email.checkValidity()) {
+            email.reportValidity();
+            valid = false;
+          }
+        });
+        return valid;
+      }
+      return true;
+    }
+
+    function nextStep(step) {
+      if (validateStep(step - 1)) {
+        if (step === 4) {
+          populateSummary();
+        }
+        showStep(step);
+      }
+    }
+
+    function prevStep(step) {
+      showStep(step);
+    }
+
+    function goToStep(step) {
+      if (step < currentStep) {
+        showStep(step);
+      } else if (step > currentStep) {
+        for (let s = currentStep; s < step; s++) {
+          if (!validateStep(s)) return;
+        }
+        if (step === 4) {
+          populateSummary();
+        }
+        showStep(step);
+      }
+    }
+
+    function populateSummary() {
+      const eventSelect = document.getElementById('reg-event');
+      const selectedEventName = eventSelect.options[eventSelect.selectedIndex]?.text || 'N/A';
+      
+      document.getElementById('summary-event').innerText = selectedEventName.split(' (')[0];
+      document.getElementById('summary-team').innerText = document.getElementById('reg-team-name').value || 'N/A';
+      document.getElementById('summary-leader').innerText = document.getElementById('reg-leader-name').value || 'N/A';
+      document.getElementById('summary-email').innerText = document.getElementById('reg-leader-email').value || 'N/A';
+      document.getElementById('summary-college').innerText = document.getElementById('reg-college').value || 'N/A';
+
+      const memberRows = document.querySelectorAll('.member-row');
+      const listContainer = document.getElementById('summary-members-list');
+      listContainer.innerHTML = '';
+      
+      let added = 0;
+      memberRows.forEach((row, i) => {
+        const name = row.querySelector('.member-name').value.trim();
+        const email = row.querySelector('.member-email').value.trim();
+        if (name) {
+          added++;
+          const emailStr = email ? ' (' + email + ')' : '';
+          const div = document.createElement('div');
+          div.style.padding = '4px 0';
+          div.style.borderBottom = '1px dashed rgba(16, 185, 129, 0.04)';
+          div.innerText = added + '. ' + name + emailStr;
+          listContainer.appendChild(div);
+        }
+      });
+
+      if (added === 0) {
+        listContainer.innerText = 'No additional members added';
+        listContainer.style.color = 'var(--text-muted)';
+      } else {
+        listContainer.style.color = 'var(--text-primary)';
+      }
+    }
+
     let memberCount = 0;
 
     function addMemberRow(defaultName = '', defaultEmail = '') {

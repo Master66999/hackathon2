@@ -69,13 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
           </li>
 
           <!-- Public Portals Dropdown -->
-          <li class="nav-item dropdown ${['register.html', 'attend.html'].includes(pageName) ? 'active' : ''}" style="position: relative;">
+          <li class="nav-item dropdown ${['register.html', 'attend.html', 'marketing.html'].includes(pageName) ? 'active' : ''}" style="position: relative;">
             <a href="#" class="dropdown-trigger" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
               <i class="fa-solid fa-link"></i> Portals <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
             </a>
             <ul class="dropdown-content">
               <li class="${pageName === 'register.html' ? 'active' : ''}"><a href="register.html"><i class="fa-solid fa-user-plus"></i> Team Register</a></li>
               <li class="${pageName === 'attend.html' ? 'active' : ''}"><a href="attend.html"><i class="fa-solid fa-clipboard-user"></i> Self Check-in</a></li>
+              <li class="${pageName === 'marketing.html' ? 'active' : ''}"><a href="marketing.html"><i class="fa-solid fa-bullhorn"></i> Marketing Flyer</a></li>
             </ul>
           </li>
         </ul>
@@ -140,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <li class="mobile-drawer-subheader" style="margin-top: 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">Public Portals</li>
             <li class="${pageName === 'register.html' ? 'active' : ''}"><a href="register.html"><i class="fa-solid fa-user-plus"></i> Team Register</a></li>
             <li class="${pageName === 'attend.html' ? 'active' : ''}"><a href="attend.html"><i class="fa-solid fa-clipboard-user"></i> Self Check-in</a></li>
+            <li class="${pageName === 'marketing.html' ? 'active' : ''}"><a href="marketing.html"><i class="fa-solid fa-bullhorn"></i> Marketing Flyer</a></li>
           </ul>
         </div>
         <div class="mobile-drawer-footer" style="padding: 20px; border-top: 1px solid var(--border-color);">

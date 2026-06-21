@@ -338,6 +338,29 @@ app.get('/api/public/events', async (req, res) => {
   }
 });
 
+// Route: Generate registration URL QR code dynamically
+app.get('/api/public/register-qr', async (req, res) => {
+  try {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const registerUrl = `${protocol}://${host}/register.html`;
+    
+    // Generate QR code pointing to the registration page URL
+    const qrCodeDataUrl = await qrcode.toDataURL(registerUrl, {
+      color: {
+        dark: '#0f172a', // Theme deep slate
+        light: '#ffffff'
+      },
+      width: 400,
+      margin: 2
+    });
+    
+    res.json({ qrCode: qrCodeDataUrl, url: registerUrl });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate QR code: ' + err.message });
+  }
+});
+
 app.get('/api/events', authenticateToken, async (req, res) => {
   try {
     const events = await db.Event.find({ userId: req.userId }).sort({ date: 1 });
