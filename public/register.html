@@ -105,12 +105,21 @@
         width: 240px;
         height: 320px; /* 3:4 aspect ratio */
         position: relative;
-        background: url('get-pass.jpg') no-repeat center center;
-        background-size: cover;
         border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.1);
         overflow: hidden;
         margin-bottom: 12px;
+        container-type: size;
+      }
+      .pass-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+        pointer-events: none;
       }
       .pass-text {
         position: absolute;
@@ -119,6 +128,7 @@
         font-weight: 700;
         color: #ffffff;
         font-size: 7px;
+        font-size: 2.92cqw;
         text-transform: uppercase;
         letter-spacing: 0.2px;
         transform: translateY(-50%);
@@ -128,11 +138,12 @@
         width: 32%;
         text-align: left;
         pointer-events: none;
+        z-index: 2;
       }
       .pass-val-name { top: 40.8%; }
       .pass-val-team { top: 47.4%; color: #00ffcc; }
-      .pass-val-teamid { top: 54.1%; font-family: monospace; font-size: 6.5px; color: #a855f7; }
-      .pass-val-partid { top: 60.8%; font-family: monospace; font-size: 6.5px; color: #fbbf24; }
+      .pass-val-teamid { top: 54.1%; font-family: monospace; font-size: 6.5px; font-size: 2.71cqw; color: #a855f7; }
+      .pass-val-partid { top: 60.8%; font-family: monospace; font-size: 6.5px; font-size: 2.71cqw; color: #fbbf24; }
       .pass-val-college { top: 67.4%; color: #cbd5e0; }
 
       .pass-event {
@@ -143,24 +154,27 @@
         top: 78.6%;
         transform: translateY(-50%);
         font-size: 9px;
+        font-size: 3.75cqw;
         font-weight: 800;
         color: #00ffcc;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         pointer-events: none;
+        z-index: 2;
       }
 
       .pass-qr {
         position: absolute;
-        left: 50px;
-        top: 139px;
-        width: 68px;
-        height: 68px;
+        left: 20.833%;
+        top: 43.4375%;
+        width: 28.333%;
+        height: 21.25%;
         background: #ffffff;
         padding: 2px;
         border-radius: 4px;
         box-sizing: border-box;
         box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        z-index: 2;
       }
       .pass-qr img {
         width: 100%;
@@ -170,48 +184,40 @@
       
       /* Print Layout styles */
       @media print {
-        body * {
-          visibility: hidden !important;
+        @page {
+          size: A4 portrait;
+          margin: 15mm 10mm 15mm 10mm;
         }
-        #print-area, #print-area * {
-          visibility: visible !important;
+        body {
+          background: #ffffff !important;
+          color: #000000 !important;
+        }
+        body > *:not(#print-area) {
+          display: none !important;
         }
         #print-area {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
           display: block !important;
+          position: static !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         .print-page {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 30px;
-          justify-content: center;
-          padding: 20px;
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 25px !important;
+          justify-content: center !important;
+          align-content: flex-start !important;
+          padding: 0 !important;
         }
         .print-page .pass-card {
-          width: 384px !important;
-          height: 512px !important;
+          width: 8.5cm !important;
+          height: 11.33cm !important;
           box-shadow: none !important;
-          border: 1px solid #333 !important;
-          page-break-inside: avoid;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        .print-page .pass-text {
-          font-size: 11px !important;
-          letter-spacing: 0.3px !important;
-        }
-        .print-page .pass-val-teamid { font-size: 10px !important; }
-        .print-page .pass-val-partid { font-size: 10px !important; }
-        .print-page .pass-event { font-size: 14px !important; }
-        .print-page .pass-qr {
-          left: 80px !important;
-          top: 222px !important;
-          width: 110px !important;
-          height: 110px !important;
-          border-radius: 8px !important;
+          border: 1px solid #e2e8f0 !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          margin-bottom: 0 !important;
         }
       }
     </style>
@@ -439,6 +445,7 @@
             
             cardWrapper.innerHTML = `
               <div class="pass-card">
+                <img src="get-pass.png" class="pass-bg" alt="Pass Background">
                 <div class="pass-text pass-val-name">${ticket.name}</div>
                 <div class="pass-text pass-val-team">${name}</div>
                 <div class="pass-text pass-val-teamid">${data.team._id.toUpperCase().slice(-12)}</div>
@@ -536,7 +543,7 @@
         };
         qrImg.src = qrCodeDataUrl;
       };
-      bgImg.src = 'get-pass.jpg';
+      bgImg.src = 'get-pass.png';
     }
 
     function printPass(name, teamName, eventName, qrCodeDataUrl, teamId, participantId, college) {
@@ -544,6 +551,7 @@
       printArea.innerHTML = `
         <div class="print-page">
           <div class="pass-card">
+            <img src="get-pass.png" class="pass-bg" alt="Pass Background">
             <div class="pass-text pass-val-name">${name}</div>
             <div class="pass-text pass-val-team">${teamName}</div>
             <div class="pass-text pass-val-teamid">${teamId.toUpperCase().slice(-12)}</div>
@@ -571,6 +579,7 @@
         const college = card.getAttribute('data-college');
         html += `
           <div class="pass-card">
+            <img src="get-pass.png" class="pass-bg" alt="Pass Background">
             <div class="pass-text pass-val-name">${name}</div>
             <div class="pass-text pass-val-team">${team}</div>
             <div class="pass-text pass-val-teamid">${teamId.toUpperCase().slice(-12)}</div>

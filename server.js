@@ -49,7 +49,7 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
 // Helper: Send ticket email with QR code and Gate Pass to all members
 async function sendTicketEmail(team, eventName, tickets) {
   const fs = require('fs');
-  const gatePassPath = path.join(__dirname, 'public', 'get-pass.jpg');
+  const gatePassPath = path.join(__dirname, 'public', 'get-pass.png');
   
   if (!transporter) {
     tickets.forEach(t => {
@@ -74,7 +74,7 @@ async function sendTicketEmail(team, eventName, tickets) {
     // Attach gate pass if it exists on disk
     let hasGatePass = false;
     if (fs.existsSync(gatePassPath)) {
-      attachments.push({ filename: 'get-pass.jpg', path: gatePassPath, cid: 'gatepass' });
+      attachments.push({ filename: 'get-pass.png', path: gatePassPath, cid: 'gatepass' });
       hasGatePass = true;
     }
 
