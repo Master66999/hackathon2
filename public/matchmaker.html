@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,11 +14,12 @@
       gap: 20px;
       margin-bottom: 24px;
     }
-    
+
     .stat-card {
       position: relative;
       overflow: hidden;
     }
+
     .stat-card::after {
       content: '';
       position: absolute;
@@ -36,6 +38,7 @@
       margin-bottom: 24px;
       padding-bottom: 2px;
     }
+
     .tab-btn {
       padding: 10px 18px;
       font-size: 14px;
@@ -50,10 +53,12 @@
       background: transparent;
       border: 1px solid transparent;
     }
+
     .tab-btn:hover {
       color: var(--text-primary);
       background: rgba(255, 255, 255, 0.03);
     }
+
     .tab-btn.active {
       color: var(--mint);
       background: rgba(0, 255, 204, 0.05);
@@ -67,6 +72,7 @@
       gap: 10px;
       margin-top: 8px;
     }
+
     .skill-tag-btn {
       padding: 8px 14px;
       background: rgba(255, 255, 255, 0.03);
@@ -81,10 +87,12 @@
       align-items: center;
       gap: 6px;
     }
+
     .skill-tag-btn:hover {
       background: rgba(255, 255, 255, 0.06);
       color: var(--text-primary);
     }
+
     .skill-tag-btn.selected {
       background: rgba(168, 85, 247, 0.12);
       border-color: var(--violet);
@@ -98,6 +106,7 @@
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 16px;
     }
+
     .roster-card {
       padding: 16px;
       background: var(--bg-card);
@@ -106,10 +115,12 @@
       position: relative;
       transition: all var(--transition-fast);
     }
+
     .roster-card:hover {
       border-color: var(--border-glow);
       transform: translateY(-2px);
     }
+
     .roster-card .delete-btn {
       position: absolute;
       top: 14px;
@@ -127,6 +138,7 @@
       font-size: 12px;
       transition: all var(--transition-fast);
     }
+
     .roster-card .delete-btn:hover {
       background: rgba(244, 63, 94, 0.2);
       border-color: var(--rose);
@@ -146,21 +158,36 @@
       text-align: center;
       color: var(--text-primary);
     }
+
     .matching-overlay.active {
       display: flex;
     }
+
     .ai-brain-icon {
       font-size: 60px;
       background: linear-gradient(135deg, var(--violet), var(--mint));
-      -webkit-background-clip: text;
+
       -webkit-text-fill-color: transparent;
       animation: pulseAI 2s infinite ease-in-out;
       margin-bottom: 20px;
     }
+
     @keyframes pulseAI {
-      0%, 100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.4)); }
-      50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 25px rgba(0, 255, 204, 0.6)); }
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.8;
+        filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.4));
+      }
+
+      50% {
+        transform: scale(1.15);
+        opacity: 1;
+        filter: drop-shadow(0 0 25px rgba(0, 255, 204, 0.6));
+      }
     }
+
     .loading-bar {
       width: 240px;
       height: 4px;
@@ -169,6 +196,7 @@
       overflow: hidden;
       margin: 15px auto;
     }
+
     .loading-bar-inner {
       height: 100%;
       width: 30%;
@@ -176,9 +204,15 @@
       border-radius: 2px;
       animation: fillBar 1.5s infinite linear;
     }
+
     @keyframes fillBar {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(330%); }
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(330%);
+      }
     }
 
     /* Preview Suggestion Panels */
@@ -188,6 +222,7 @@
       flex-direction: column;
       gap: 16px;
     }
+
     .match-team-card {
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--border-glow);
@@ -195,15 +230,17 @@
       padding: 20px;
       transition: border-color var(--transition-fast);
     }
+
     .match-team-card:hover {
       border-color: var(--border-glow-hover);
     }
+
     .match-team-member {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 10px;
-      background: rgba(5,6,8,0.3);
+      background: rgba(5, 6, 8, 0.3);
       border-radius: 8px;
       margin-top: 8px;
       border: 1px solid var(--border-color);
@@ -221,6 +258,7 @@
       color: var(--text-muted);
       letter-spacing: 1px;
     }
+
     .step-divider::before,
     .step-divider::after {
       content: '';
@@ -237,6 +275,7 @@
     }
   </style>
 </head>
+
 <body style="background: var(--bg-main);">
 
   <!-- 1. ADMIN PANEL VIEW -->
@@ -260,21 +299,32 @@
         <div class="dashboard-grid">
           <!-- Stat 1 -->
           <div class="card stat-card">
-            <h5 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Total Solo Signups</h5>
-            <div style="font-size: 36px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono);" id="stat-total-solo">0</div>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Registered developers waiting for a team</p>
+            <h5
+              style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+              Total Solo Signups</h5>
+            <div style="font-size: 36px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono);"
+              id="stat-total-solo">0</div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Registered developers waiting for
+              a team</p>
           </div>
           <!-- Stat 2 -->
           <div class="card stat-card">
-            <h5 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Unmatched Solo Count</h5>
-            <div style="font-size: 36px; font-weight: 800; color: var(--violet); font-family: var(--font-mono);" id="stat-unmatched-solo">0</div>
+            <h5
+              style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+              Unmatched Solo Count</h5>
+            <div style="font-size: 36px; font-weight: 800; color: var(--violet); font-family: var(--font-mono);"
+              id="stat-unmatched-solo">0</div>
             <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Pending developers to cluster</p>
           </div>
           <!-- Stat 3 -->
           <div class="card stat-card">
-            <h5 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Active Events</h5>
-            <div style="font-size: 36px; font-weight: 800; color: var(--mint); font-family: var(--font-mono);" id="stat-active-events">0</div>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Hackathons accepting registrations</p>
+            <h5
+              style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+              Active Events</h5>
+            <div style="font-size: 36px; font-weight: 800; color: var(--mint); font-family: var(--font-mono);"
+              id="stat-active-events">0</div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Hackathons accepting
+              registrations</p>
           </div>
         </div>
 
@@ -282,20 +332,24 @@
         <div class="card" style="border-color: var(--border-color); margin-bottom: 24px;">
           <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">AI Clustering Control Panel</h3>
           <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
-            The engine reads the skill profiling of all unmatched developer registrants for your selected event and groups them together into balanced team clusters, minimizing skill overlapping.
+            The engine reads the skill profiling of all unmatched developer registrants for your selected event and
+            groups them together into balanced team clusters, minimizing skill overlapping.
           </p>
-          
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+
+          <div
+            style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
             <div class="form-group" style="margin-bottom: 0;">
               <label for="admin-match-event">Target Hackathon/Competition Event</label>
-              <select id="admin-match-event" class="form-control" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+              <select id="admin-match-event" class="form-control"
+                style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
                 <!-- Loaded dynamically -->
               </select>
             </div>
-            
+
             <div class="form-group" style="margin-bottom: 0;">
               <label for="admin-match-size">Target Team Size</label>
-              <select id="admin-match-size" class="form-control" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+              <select id="admin-match-size" class="form-control"
+                style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
                 <option value="3" selected>3 Developers / Team</option>
                 <option value="4">4 Developers / Team</option>
                 <option value="2">2 Developers / Team</option>
@@ -303,7 +357,8 @@
               </select>
             </div>
 
-            <button class="btn btn-mint" onclick="runMatchmaker()" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border-radius: 8px;">
+            <button class="btn btn-mint" onclick="runMatchmaker()"
+              style="height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border-radius: 8px;">
               <i class="fa-solid fa-wand-magic-sparkles"></i> Run Matchmaker
             </button>
           </div>
@@ -312,7 +367,8 @@
         <!-- Matching Suggestions Grid -->
         <div id="matching-results" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3 style="font-size: 20px; font-weight: 700; color: var(--mint);" id="results-title">AI Suggested Teams</h3>
+            <h3 style="font-size: 20px; font-weight: 700; color: var(--mint);" id="results-title">AI Suggested Teams
+            </h3>
             <button class="btn btn-primary btn-sm" onclick="confirmFormTeams()">
               <i class="fa-solid fa-circle-check"></i> Approve & Generate Teams
             </button>
@@ -326,12 +382,14 @@
 
       <!-- TAB 2: ROSTER VIEW PANEL -->
       <div id="roster-panel" class="tab-panel" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
           <p style="font-size: 14px; color: var(--text-secondary);">
             Search or filter through solo developers who have registered but have not been placed into a team.
           </p>
           <div style="display: flex; gap: 10px; min-width: 300px;">
-            <input type="text" id="roster-search" class="form-control" placeholder="Search by name, email, skills..." oninput="filterRoster()" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+            <input type="text" id="roster-search" class="form-control" placeholder="Search by name, email, skills..."
+              oninput="filterRoster()" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
           </div>
         </div>
 
@@ -347,17 +405,20 @@
           <form id="admin-solo-signup-form" onsubmit="submitSoloRegistration(event, 'admin')">
             <div class="form-group">
               <label for="admin-reg-event">Target Event</label>
-              <select id="admin-reg-event" class="form-control" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></select>
+              <select id="admin-reg-event" class="form-control" required
+                style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></select>
             </div>
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div class="form-group">
                 <label for="admin-reg-name">Full Name</label>
-                <input type="text" id="admin-reg-name" class="form-control" placeholder="Jane Miller" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+                <input type="text" id="admin-reg-name" class="form-control" placeholder="Jane Miller" required
+                  style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
               </div>
               <div class="form-group">
                 <label for="admin-reg-email">Email Address</label>
-                <input type="email" id="admin-reg-email" class="form-control" placeholder="jane@miller.com" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+                <input type="email" id="admin-reg-email" class="form-control" placeholder="jane@miller.com" required
+                  style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
               </div>
             </div>
 
@@ -367,16 +428,21 @@
                 <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">Frontend</button>
                 <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">Backend</button>
                 <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">AI/ML</button>
-                <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">UI/UX Design</button>
+                <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">UI/UX
+                  Design</button>
                 <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">Mobile Dev</button>
-                <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">Cloud/DevOps</button>
-                <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">Cyber Security</button>
+                <button type="button" class="skill-tag-btn"
+                  onclick="toggleSkillTag(this, 'admin')">Cloud/DevOps</button>
+                <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'admin')">Cyber
+                  Security</button>
               </div>
             </div>
 
             <div class="form-group">
               <label for="admin-reg-interests">Interests & Project Ideas</label>
-              <textarea id="admin-reg-interests" class="form-control" rows="3" placeholder="e.g. Building AI health tech assistant, Web3 decentralized governance..." style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></textarea>
+              <textarea id="admin-reg-interests" class="form-control" rows="3"
+                placeholder="e.g. Building AI health tech assistant, Web3 decentralized governance..."
+                style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></textarea>
             </div>
 
             <button type="submit" class="btn btn-mint" style="width: 100%; padding: 12px; margin-top: 10px;">
@@ -396,18 +462,20 @@
         <i class="fa-solid fa-bolt-lightning" style="color: var(--mint);"></i> ClubPulse
       </div>
       <p style="text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 30px;">
-        Solo developer looking for a team? Register your skill profile below. Our AI Matchmaking engine will cluster you into a balanced team with complementary talents!
+        Solo developer looking for a team? Register your skill profile below. Our AI Matchmaking engine will cluster you
+        into a balanced team with complementary talents!
       </p>
 
       <div class="card" id="public-form-card" style="border-color: var(--border-color);">
         <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; text-align: center; color: var(--mint);">
           <i class="fa-solid fa-people-arrows"></i> Solo Builder Registration
         </h3>
-        
+
         <form id="public-solo-signup-form" onsubmit="submitSoloRegistration(event, 'public')">
           <div class="form-group">
             <label for="public-reg-event">Choose Hackathon or Event</label>
-            <select id="public-reg-event" class="form-control" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+            <select id="public-reg-event" class="form-control" required
+              style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
               <option value="">Loading events...</option>
             </select>
           </div>
@@ -415,11 +483,13 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
               <label for="public-reg-name">Full Name</label>
-              <input type="text" id="public-reg-name" class="form-control" placeholder="e.g. Alex Rivera" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+              <input type="text" id="public-reg-name" class="form-control" placeholder="e.g. Alex Rivera" required
+                style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
             </div>
             <div class="form-group">
               <label for="public-reg-email">Email Address</label>
-              <input type="email" id="public-reg-email" class="form-control" placeholder="e.g. alex@rivera.dev" required style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
+              <input type="email" id="public-reg-email" class="form-control" placeholder="e.g. alex@rivera.dev" required
+                style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
             </div>
           </div>
 
@@ -432,30 +502,38 @@
               <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'public')">UI/UX Design</button>
               <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'public')">Mobile Dev</button>
               <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'public')">Cloud/DevOps</button>
-              <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'public')">Cyber Security</button>
+              <button type="button" class="skill-tag-btn" onclick="toggleSkillTag(this, 'public')">Cyber
+                Security</button>
             </div>
           </div>
 
           <div class="form-group">
             <label for="public-reg-interests">Interests, Specialties & Project Ideas</label>
-            <textarea id="public-reg-interests" class="form-control" rows="3" placeholder="e.g. Interested in DeFi algorithms, smart contracts, analytics dashboards..." style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></textarea>
+            <textarea id="public-reg-interests" class="form-control" rows="3"
+              placeholder="e.g. Interested in DeFi algorithms, smart contracts, analytics dashboards..."
+              style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);"></textarea>
           </div>
 
-          <button type="submit" class="btn btn-mint" id="public-submit-btn" style="width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 10px;">
+          <button type="submit" class="btn btn-mint" id="public-submit-btn"
+            style="width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 10px;">
             <i class="fa-solid fa-user-plus"></i> Submit Solo Registration
           </button>
         </form>
       </div>
 
       <!-- Public Success Banner -->
-      <div class="card" id="public-success-card" style="display: none; border-color: var(--mint-glow); text-align: center; padding: 40px 20px;">
+      <div class="card" id="public-success-card"
+        style="display: none; border-color: var(--mint-glow); text-align: center; padding: 40px 20px;">
         <div style="font-size: 50px; margin-bottom: 15px;">🚀</div>
         <h3 style="color: var(--mint); font-size: 24px; margin-bottom: 10px;">Registration Successful!</h3>
         <p style="font-size: 15px; color: var(--text-secondary); margin-bottom: 24px;">
-          Hi <strong id="registered-dev-name">Hacker</strong>, your profile has been successfully uploaded to the ClubPulse matchmaking portal.
+          Hi <strong id="registered-dev-name">Hacker</strong>, your profile has been successfully uploaded to the
+          ClubPulse matchmaking portal.
         </p>
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: var(--text-muted);">
-          Our AI Matchmaking algorithms cluster developers into optimal balanced teams. You will receive your digital QR code pass ticket via email once the organizer confirms your team matching!
+        <div
+          style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: var(--text-muted);">
+          Our AI Matchmaking algorithms cluster developers into optimal balanced teams. You will receive your digital QR
+          code pass ticket via email once the organizer confirms your team matching!
         </div>
         <button class="btn btn-secondary btn-sm" onclick="resetPublicForm()">
           <i class="fa-solid fa-circle-arrow-left"></i> Register Another Profile
@@ -477,9 +555,11 @@
     <div class="ai-brain-icon">
       <i class="fa-solid fa-brain"></i>
     </div>
-    <h3 style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px;" id="ai-status-header">AI Matchmaker Running</h3>
-    <p style="font-size: 14px; color: var(--text-secondary); max-width: 320px;" id="ai-status-msg">Analyzing skills and profile data matrices...</p>
-    
+    <h3 style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px;"
+      id="ai-status-header">AI Matchmaker Running</h3>
+    <p style="font-size: 14px; color: var(--text-secondary); max-width: 320px;" id="ai-status-msg">Analyzing skills and
+      profile data matrices...</p>
+
     <div class="loading-bar">
       <div class="loading-bar-inner"></div>
     </div>
@@ -489,7 +569,7 @@
   <!-- SCRIPTS -->
   <script src="js/auth.js"></script>
   <script src="js/layout.js"></script>
-  
+
   <script>
     // Selected skills memory arrays
     const selectedSkills = {
@@ -519,7 +599,7 @@
     function toggleSkillTag(btn, context) {
       const skillName = btn.textContent.trim();
       btn.classList.toggle('selected');
-      
+
       const list = selectedSkills[context];
       const index = list.indexOf(skillName);
       if (index === -1) {
@@ -533,9 +613,9 @@
     function switchTab(tabId) {
       document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      
+
       document.getElementById(tabId).style.display = 'block';
-      
+
       // Find matching button to activate
       const btnMap = {
         'matchmaker-panel': 0,
@@ -570,14 +650,14 @@
         // Fetch events
         const eventRes = await fetch('/api/events');
         allEvents = await eventRes.json();
-        
+
         // Populating event dropdowns
         const adminSelect = document.getElementById('admin-match-event');
         const adminSignupSelect = document.getElementById('admin-reg-event');
-        
+
         adminSelect.innerHTML = '';
         adminSignupSelect.innerHTML = '<option value="">— Choose Target Event —</option>';
-        
+
         const upcomingEvents = allEvents.filter(e => e.status === 'upcoming');
         document.getElementById('stat-active-events').textContent = upcomingEvents.length;
 
@@ -590,7 +670,7 @@
         // Fetch roster
         const rosterRes = await fetch('/api/solo-registrants');
         allRoster = await rosterRes.json();
-        
+
         renderAdminStats();
         renderRosterGrid();
       } catch (err) {
@@ -602,7 +682,7 @@
     function renderAdminStats() {
       document.getElementById('roster-count').textContent = allRoster.length;
       document.getElementById('stat-total-solo').textContent = allRoster.length;
-      
+
       const unmatched = allRoster.filter(r => !r.matchedTeam);
       document.getElementById('stat-unmatched-solo').textContent = unmatched.length;
     }
@@ -611,7 +691,7 @@
     function renderRosterGrid() {
       const grid = document.getElementById('roster-grid');
       grid.innerHTML = '';
-      
+
       if (allRoster.length === 0) {
         grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No solo registrants found.</div>`;
         return;
@@ -619,12 +699,12 @@
 
       allRoster.forEach(solo => {
         const skillsBadges = (solo.skills || []).map(s => `<span class="badge badge-active" style="font-size:10px; margin-right:4px; margin-bottom:4px; padding: 2px 6px; text-transform:none;">${s}</span>`).join('');
-        const matchedBadge = solo.matchedTeam 
+        const matchedBadge = solo.matchedTeam
           ? `<span class="badge badge-completed" style="font-size:10px;">Matched</span>`
           : `<span class="badge badge-upcoming" style="font-size:10px; background:rgba(168,85,247,0.1); border-color:var(--violet); color:var(--violet)">Unmatched</span>`;
 
         const eventName = solo.registeredEvent ? solo.registeredEvent.title : 'Unknown Event';
-        
+
         grid.innerHTML += `
           <div class="roster-card" id="solo-${solo._id}">
             <div class="delete-btn" onclick="deleteSoloRegistrant('${solo._id}')" title="Delete Solo profile">
@@ -663,7 +743,7 @@
     function filterRoster() {
       const query = document.getElementById('roster-search').value.toLowerCase().trim();
       const cards = document.querySelectorAll('.roster-card');
-      
+
       cards.forEach(card => {
         const text = card.textContent.toLowerCase();
         if (text.includes(query)) {
@@ -677,12 +757,12 @@
     // DELETE solo profile
     async function deleteSoloRegistrant(id) {
       if (!confirm('Are you sure you want to delete this solo registrant profile?')) return;
-      
+
       try {
         const res = await fetch(`/api/solo-registrants/${id}`, {
           method: 'DELETE'
         });
-        
+
         if (res.ok) {
           allRoster = allRoster.filter(r => r._id !== id);
           renderAdminStats();
@@ -698,7 +778,7 @@
     // Submit Solo developer signup form
     async function submitSoloRegistration(event, context) {
       event.preventDefault();
-      
+
       const submitBtn = context === 'public' ? document.getElementById('public-submit-btn') : null;
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -723,7 +803,7 @@
         });
 
         const data = await res.json();
-        
+
         if (!res.ok) {
           alert(data.error || 'Failed to submit profile.');
           if (submitBtn) {
@@ -768,7 +848,7 @@
     async function runMatchmaker() {
       const eventId = document.getElementById('admin-match-event').value;
       const targetSize = parseInt(document.getElementById('admin-match-size').value);
-      
+
       if (!eventId) {
         alert('Please select an event first.');
         return;
@@ -778,9 +858,9 @@
       const overlay = document.getElementById('matching-overlay');
       const header = document.getElementById('ai-status-header');
       const msg = document.getElementById('ai-status-msg');
-      
+
       overlay.classList.add('active');
-      
+
       const steps = [
         { h: 'Profile Scanning', m: 'Retrieving all active solo profiles for this event...' },
         { h: 'Skill Extraction', m: 'Processing frontend, backend, AI, and design tags...' },
@@ -800,7 +880,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ eventId, targetTeamSize: targetSize })
         });
-        
+
         const data = await res.json();
         overlay.classList.remove('active');
 
@@ -822,9 +902,9 @@
     function renderMatchPreviews() {
       const resultsDiv = document.getElementById('matching-results');
       const listDiv = document.getElementById('match-preview-list');
-      
+
       listDiv.innerHTML = '';
-      
+
       if (currentSuggestedMatches.length === 0) {
         listDiv.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No unmatched candidates available to form groups.</div>`;
         resultsDiv.style.display = 'block';
@@ -886,7 +966,7 @@
       const overlay = document.getElementById('matching-overlay');
       const header = document.getElementById('ai-status-header');
       const msg = document.getElementById('ai-status-msg');
-      
+
       header.textContent = 'Generating Teams';
       msg.textContent = 'Creating team structures and compiling QR access tickets...';
       overlay.classList.add('active');
@@ -907,7 +987,7 @@
         }
 
         alert(`Successfully created ${data.teams.length} new teams! Access passes generated & leader emails notified.`);
-        
+
         // Hide preview matching and reload all data
         document.getElementById('matching-results').style.display = 'none';
         currentSuggestedMatches = [];
@@ -920,4 +1000,5 @@
     }
   </script>
 </body>
+
 </html>
