@@ -163,7 +163,7 @@
     }
 
     .pass-val-name {
-      top: 37.9%;
+      top: 35.9%;
     }
 
     .pass-val-team {
@@ -812,6 +812,74 @@
       }
     }
 
+    function generatePassDataUrl(name, teamName, eventName, qrCodeDataUrl, teamId, participantId, college) {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 768;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+
+        const bgImg = new Image();
+        bgImg.onload = () => {
+          ctx.drawImage(bgImg, 0, 0, 768, 1024);
+
+          const qrImg = new Image();
+          qrImg.onload = () => {
+            const qrSize = 200;
+            const qrX = 255 - (qrSize / 2);
+            const qrY = 531 - (qrSize / 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 12);
+            } else {
+              ctx.rect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+            }
+            ctx.fill();
+            ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            ctx.font = '700 22px "Outfit", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(name.toUpperCase(), 480, 409);
+
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillText(teamName.toUpperCase(), 480, 462);
+
+            ctx.font = '700 20px monospace';
+            ctx.fillStyle = '#a855f7';
+            ctx.fillText(teamId.toUpperCase().slice(-12), 480, 548);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText(participantId, 480, 640);
+
+            ctx.font = '700 22px "Outfit", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#cbd5e0';
+            ctx.fillText(college.toUpperCase(), 480, 728);
+
+            ctx.textAlign = 'center';
+            ctx.font = '800 28px "Outfit", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillText(eventName.toUpperCase(), 384, 825);
+
+            resolve(canvas.toDataURL('image/png'));
+          };
+          qrImg.onerror = () => {
+            console.error('Failed to load QR image on canvas generation, resolving without QR');
+            resolve(canvas.toDataURL('image/png'));
+          };
+          qrImg.src = qrCodeDataUrl;
+        };
+        bgImg.onerror = () => {
+          console.error('Failed to load background image on canvas generation, resolving with blank canvas');
+          resolve(canvas.toDataURL('image/png'));
+        };
+        bgImg.src = 'get-pass.png';
+      });
+    }
+
     async function submitRegistration(e) {
       e.preventDefault();
 
@@ -854,12 +922,64 @@
           return;
         }
 
+        // Show generating state
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mailing ID Cards...';
+
+        let eventName = 'Event';
+        const eventSelect = document.getElementById('reg-event');
+        if (eventSelect && eventSelect.selectedIndex >= 0) {
+          eventName = eventSelect.options[eventSelect.selectedIndex].text.split(' (')[0];
+        }
+
+        // Generate card images in parallel for leader and members
+        const ticketsWithImages = await Promise.all(data.tickets.map(async (ticket) => {
+          try {
+            const cardImage = await generatePassDataUrl(
+              ticket.name,
+              name,
+              eventName,
+              ticket.qrCode,
+              data.team._id,
+              ticket.participantId,
+              ticket.college
+            );
+            return {
+              ...ticket,
+              cardImage
+            };
+          } catch (err) {
+            console.error('Error generating card image for', ticket.name, err);
+            return ticket;
+          }
+        }));
+
+        // Send email request
+        let emailSent = false;
+        let mockEmail = false;
+        try {
+          const emailRes = await fetch('/api/teams/send-emails', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teamId: data.team._id,
+              tickets: ticketsWithImages
+            })
+          });
+          const emailData = await emailRes.json();
+          if (emailRes.ok) {
+            emailSent = emailData.emailSent;
+            mockEmail = emailData.mockEmail;
+          }
+        } catch (emailErr) {
+          console.error('Error sending confirmation emails:', emailErr);
+        }
+
         // Show success banner
         const banner = document.getElementById('success-banner');
         banner.classList.add('active');
         banner.scrollIntoView({ behavior: 'smooth' });
 
-        const emailNote = (data.emailSent || data.mockEmail)
+        const emailNote = (emailSent || mockEmail)
           ? `A confirmation email with individual ID cards has been sent to all registered team members.`
           : `Confirmation emails could not be sent. Please download your ID cards below.`;
 
@@ -869,12 +989,6 @@
         // Render Participant ID Cards
         const container = document.getElementById('passes-container');
         container.innerHTML = '';
-
-        let eventName = 'Event';
-        const eventSelect = document.getElementById('reg-event');
-        if (eventSelect && eventSelect.selectedIndex >= 0) {
-          eventName = eventSelect.options[eventSelect.selectedIndex].text.split(' (')[0];
-        }
 
         if (data.tickets && data.tickets.length > 0) {
           data.tickets.forEach(ticket => {

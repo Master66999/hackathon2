@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubPulse - Project Submission Portal</title>
+  <meta name="description" content="Submit your hackathon project links, source code, PPT slides, and reports.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .success-banner {
+      display: none;
+      text-align: center;
+      padding: 30px;
+      background: rgba(0, 255, 204, 0.04);
+      border: 1px solid var(--mint-glow);
+      border-radius: 16px;
+      margin-top: 20px;
+      backdrop-filter: blur(16px);
+    }
+
+    .success-banner.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body style="background: var(--bg-main);">
+  <div class="public-container">
+    <div class="public-box" style="max-width: 500px; margin: 40px auto;">
+      <!-- Header -->
+      <div class="public-logo" style="justify-content: center; font-size: 28px; margin-bottom: 8px;">
+        <i class="fa-solid fa-code" style="margin-right: 8px; color: var(--mint);"></i> ClubPulse
+      </div>
+      <div style="text-align: center; font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;">
+        Project Gateway
+      </div>
+      <p style="text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">
+        Submit your team's live project links, GitHub repository, presentation slides, and evaluation report.
+      </p>
+
+      <div class="card" id="form-card" style="border-color: var(--border-color); padding: 25px;">
+        <form id="submission-form" onsubmit="submitProject(event)">
+          <!-- Credentials -->
+          <h4 style="color: var(--text-primary); font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-key" style="color: var(--violet); font-size: 14px;"></i> Team Credentials
+          </h4>
+          
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label for="sub-team-id" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Team ID</label>
+            <input type="text" id="sub-team-id" class="form-control" placeholder="Paste your Team ID from your ticket" required
+              style="background-color: rgba(5, 6, 8, 0.4); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; width: 100%; font-size: 13px; font-family: monospace;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="sub-leader-email" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Team Leader Email</label>
+            <input type="email" id="sub-leader-email" class="form-control" placeholder="leader@email.com" required
+              style="background-color: rgba(5, 6, 8, 0.4); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; width: 100%; font-size: 13px;">
+          </div>
+
+          <div style="height: 1px; background: var(--border-color); margin: 20px 0;"></div>
+
+          <!-- Submission Fields -->
+          <h4 style="color: var(--text-primary); font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-cloud-arrow-up" style="color: var(--mint); font-size: 14px;"></i> Project Links
+          </h4>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label for="sub-live-link" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              <i class="fa-solid fa-globe" style="color: var(--mint); margin-right: 4px;"></i> Live Project URL
+            </label>
+            <input type="url" id="sub-live-link" class="form-control" placeholder="https://my-app.vercel.app" required
+              style="background-color: rgba(5, 6, 8, 0.4); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; width: 100%; font-size: 13px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label for="sub-github-link" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              <i class="fa-brands fa-github" style="color: var(--violet); margin-right: 4px;"></i> GitHub Repository
+            </label>
+            <input type="url" id="sub-github-link" class="form-control" placeholder="https://github.com/myteam/repo" required
+              style="background-color: rgba(5, 6, 8, 0.4); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; width: 100%; font-size: 13px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label for="sub-ppt-link" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              <i class="fa-solid fa-file-powerpoint" style="color: var(--rose); margin-right: 4px;"></i> Presentation Slides (Canva/Google Slides)
+            </label>
+            <input type="url" id="sub-ppt-link" class="form-control" placeholder="https://docs.google.com/presentation/d/..." required
+              style="background-color: rgba(5, 6, 8, 0.4); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; width: 100%; font-size: 13px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label for="sub-report-link" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              <i class="fa-solid fa-file-lines" style="color: var(--gold); margin-right: 4px;"></i> Project Report / Document URL
+            </label>
+            <input type="url" id="sub-report-link" class="form-control" placeholder="https://docs.google.com/document/d/..." required
+              style="background-color: rgba(5, 6, 8, 0.4); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; width: 100%; font-size: 13px;">
+          </div>
+
+          <button type="submit" class="btn btn-mint btn-sm" id="submit-btn" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 700;">
+            <i class="fa-solid fa-paper-plane"></i> Submit Project Gateway
+          </button>
+        </form>
+      </div>
+
+      <!-- Success Banner -->
+      <div class="success-banner" id="success-banner">
+        <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
+        <h3 style="color: var(--mint); font-size: 20px; margin-bottom: 8px;">Project Submitted Successfully!</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;" id="success-msg">
+          Your project gateway links have been recorded. Judges and administrators will review your links from the dashboard.
+        </p>
+        <button class="btn btn-secondary btn-sm" onclick="resetForm()">
+          <i class="fa-solid fa-rotate-left"></i> Resubmit or Update Links
+        </button>
+      </div>
+
+      <!-- Back Links -->
+      <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted); display: flex; justify-content: center; gap: 12px;">
+        <a href="register.html" style="color: var(--violet); font-weight: 600;">← Team Registration</a>
+        <span style="color: var(--border-glow);">|</span>
+        <a href="index.html" style="color: var(--violet); font-weight: 600;">Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    document.head.appendChild(link);
+  </script>
+  <script>
+    async function submitProject(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+
+      const teamId = document.getElementById('sub-team-id').value.trim();
+      const leaderEmail = document.getElementById('sub-leader-email').value.trim();
+      const projectLiveLink = document.getElementById('sub-live-link').value.trim();
+      const projectGithubLink = document.getElementById('sub-github-link').value.trim();
+      const projectPptLink = document.getElementById('sub-ppt-link').value.trim();
+      const projectReportLink = document.getElementById('sub-report-link').value.trim();
+
+      try {
+        const res = await fetch('/api/teams/submit-project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teamId,
+            leaderEmail,
+            projectLiveLink,
+            projectGithubLink,
+            projectPptLink,
+            projectReportLink
+          })
+        });
+
+        const data = await res.json();
+        
+        if (!res.ok) {
+          alert(data.error || 'Submission failed. Please check your credentials.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Project Gateway';
+          return;
+        }
+
+        // Show success
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('success-banner').classList.add('active');
+        document.getElementById('success-banner').style.display = 'block';
+
+      } catch (err) {
+        console.error('Submission error:', err);
+        alert('Network error. Please make sure the server is running and try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Project Gateway';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('form-card').style.display = 'block';
+      document.getElementById('success-banner').classList.remove('active');
+      document.getElementById('success-banner').style.display = 'none';
+      
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Project Gateway';
+    }
+  </script>
+</body>
+</html>

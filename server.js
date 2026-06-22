@@ -19,7 +19,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'clubpulse_secret_key_change_in_pro
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files from 'public' if it exists
 const publicPath = path.join(__dirname, 'public');
@@ -51,13 +52,16 @@ async function sendTicketEmail(team, eventName, tickets) {
   const fs = require('fs');
   const gatePassPath = path.join(__dirname, 'public', 'get-pass.png');
   
+  const results = [];
+
   if (!transporter) {
     tickets.forEach(t => {
       console.log(`[MOCK EMAIL] To: ${t.email} (${t.name})`);
       console.log(`Subject: Personalized Pass & Ticket for ${eventName} - ${t.name}`);
       console.log(`Body: Hi ${t.name}, you are registered as ${t.role} of team ${team.name} in ${eventName}.`);
+      results.push({ email: t.email, role: t.role, status: 'mock_sent', error: '' });
     });
-    return { mock: true, sent: false, recipientsCount: tickets.length };
+    return { mock: true, sent: false, sentCount: 0, errorCount: 0, error: null, results };
   }
 
   let sentCount = 0;
@@ -71,9 +75,20 @@ async function sendTicketEmail(team, eventName, tickets) {
       { filename: 'ticket-qr.png', path: t.qrCode, cid: 'qrcode' }
     ];
     
-    // Attach gate pass if it exists on disk
+    // Attach gate pass (use t.cardImage if provided, otherwise fallback to get-pass.png)
     let hasGatePass = false;
-    if (fs.existsSync(gatePassPath)) {
+    if (t.cardImage && t.cardImage.startsWith('data:image/')) {
+      const parts = t.cardImage.split(';base64,');
+      if (parts.length === 2) {
+        const mimeType = parts[0].split(':')[1];
+        const extension = mimeType.split('/')[1] || 'png';
+        const buffer = Buffer.from(parts[1], 'base64');
+        attachments.push({ filename: `get-pass.${extension}`, content: buffer, cid: 'gatepass' });
+        hasGatePass = true;
+      }
+    }
+
+    if (!hasGatePass && fs.existsSync(gatePassPath)) {
       attachments.push({ filename: 'get-pass.png', path: gatePassPath, cid: 'gatepass' });
       hasGatePass = true;
     }
@@ -120,7 +135,7 @@ async function sendTicketEmail(team, eventName, tickets) {
           <div style="margin: 20px 0; text-align: center;">
             <h4 style="margin: 0 0 10px 0; color: #00ffcc; text-transform: uppercase; letter-spacing: 1px;">Your Hackathon Gate Pass</h4>
             <img src="cid:gatepass" alt="Hackathon Gate Pass" style="width: 100%; max-width: 400px; border-radius: 10px; border: 1px solid #3b3d4a; display: block; margin: 0 auto;" />
-            <p style="font-size: 11px; color: #a0aec0; margin-top: 8px;">(Personalized physical pass card can be downloaded from the registration page)</p>
+            <p style="font-size: 11px; color: #a0aec0; margin-top: 8px;">${t.cardImage ? '(Your personalized gate pass is attached above)' : '(Personalized physical pass card can be downloaded from the registration page)'}</p>
           </div>
           ` : ''}
 
@@ -138,17 +153,158 @@ async function sendTicketEmail(team, eventName, tickets) {
       attachments
     };
 
+    let status = 'pending';
+    let errorMsg = '';
     try {
       await transporter.sendMail(mailOptions);
       sentCount++;
+      status = 'sent';
     } catch (error) {
       console.error(`Nodemailer error sending to ${t.email}:`, error);
       errorCount++;
       lastError = error.message;
+      status = 'failed';
+      errorMsg = error.message;
+    }
+
+    results.push({ email: t.email, role: t.role, status, error: errorMsg });
+  }
+
+  return { mock: false, sent: sentCount > 0, sentCount, errorCount, error: lastError, results };
+}
+
+// Helper: Send welcome and dinner coupon emails to all team members
+async function sendWelcomeAndCouponEmails(team, eventName) {
+  const results = [];
+  const teamIdHex = team._id.toString().toUpperCase();
+  const teamIdShort = teamIdHex.slice(-6);
+
+  if (!transporter) {
+    console.log(`[MOCK DINNER EMAIL] Event: ${eventName}, Team: ${team.name}`);
+    
+    // Leader
+    const leaderCoupon = `DINNER-CP-${teamIdShort}-01`;
+    console.log(`[MOCK EMAIL] To: ${team.leaderEmail}. Subject: Welcome to ${eventName}! Dinner Coupon: ${leaderCoupon}`);
+    results.push({ email: team.leaderEmail, coupon: leaderCoupon, status: 'mock_sent' });
+
+    // Members
+    let idx = 2;
+    for (const m of (team.members || [])) {
+      if (!m.email || m.email.trim().length === 0) continue;
+      const memberCoupon = `DINNER-CP-${teamIdShort}-${idx < 10 ? '0' + idx : idx}`;
+      console.log(`[MOCK EMAIL] To: ${m.email}. Subject: Welcome to ${eventName}! Dinner Coupon: ${memberCoupon}`);
+      results.push({ email: m.email, coupon: memberCoupon, status: 'mock_sent' });
+      idx++;
+    }
+    return { mock: true, sent: false, sentCount: 0, results };
+  }
+
+  let sentCount = 0;
+  
+  const fs = require('fs');
+  const couponPath = path.join(__dirname, 'public', 'coupon.png');
+  const hasCouponImage = fs.existsSync(couponPath);
+
+  // Compile list of recipients
+  const recipients = [];
+  recipients.push({
+    name: team.leaderName,
+    email: team.leaderEmail,
+    role: 'Leader',
+    couponCode: `DINNER-CP-${teamIdShort}-01`
+  });
+
+  let idx = 2;
+  for (const m of (team.members || [])) {
+    if (!m.email || m.email.trim().length === 0) continue;
+    recipients.push({
+      name: m.name,
+      email: m.email,
+      role: 'Member',
+      couponCode: `DINNER-CP-${teamIdShort}-${idx < 10 ? '0' + idx : idx}`
+    });
+    idx++;
+  }
+
+  for (const recipient of recipients) {
+    const attachments = [];
+    if (hasCouponImage) {
+      attachments.push({
+        filename: 'coupon.png',
+        path: couponPath,
+        cid: 'coupon'
+      });
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: recipient.email,
+      subject: `🍽️ Welcome to ${eventName}! Your Dinner Coupon - ${recipient.name}`,
+      html: `
+        <div style="background-color: #0d0e12; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; border-radius: 12px; border: 1px solid #3b3d4a; max-width: 500px; margin: auto;">
+          <h2 style="color: #00ffcc; border-bottom: 2px solid #a855f7; padding-bottom: 10px; margin-top: 0;">Welcome to ${eventName}!</h2>
+          <p>Hi <strong>${recipient.name}</strong>,</p>
+          <p>You have successfully checked in at the registration desk for <strong>${eventName}</strong> as part of team <strong>${team.name}</strong>.</p>
+          <p>We are thrilled to have you! To kick off the event, here is your complimentary dinner coupon. Please present the coupon code or scan code at the catering counter.</p>
+          
+          <!-- Dinner Coupon -->
+          ${hasCouponImage ? `
+          <div style="margin: 25px 0; text-align: center;">
+            <img src="cid:coupon" alt="Refreshment Coupon" style="width: 100%; max-width: 450px; border-radius: 12px; border: 1px solid #3b3d4a; display: block; margin: 0 auto;" />
+            <div style="background: rgba(0, 0, 0, 0.4); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.2); display: inline-block; margin-top: 12px; text-align: center;">
+              <span style="font-family: monospace; font-size: 18px; font-weight: bold; color: #fbbf24; letter-spacing: 1px;">${recipient.couponCode}</span>
+            </div>
+          </div>
+          ` : `
+          <!-- Fallback Dinner Coupon Card -->
+          <div style="background: linear-gradient(135deg, #1e1b4b, #311042); padding: 24px; border-radius: 16px; border: 1px solid #a855f7; margin: 25px 0; text-align: center; box-shadow: 0 8px 24px rgba(168, 85, 247, 0.2);">
+            <div style="font-size: 11px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Complimentary Dinner Pass</div>
+            <h3 style="font-size: 20px; font-weight: 800; color: #00ffcc; margin: 0 0 16px 0; text-transform: uppercase;">🍽️ Event Dinner Coupon</h3>
+            
+            <div style="background: rgba(0, 0, 0, 0.4); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.2); display: inline-block; margin-bottom: 16px;">
+              <span style="font-family: monospace; font-size: 20px; font-weight: bold; color: #fbbf24; letter-spacing: 1px;">${recipient.couponCode}</span>
+            </div>
+            
+            <div style="width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px; font-size: 12px; color: #cbd5e0; text-align: left;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="color: #a855f7; font-weight: 600; padding: 2px 0;">Participant:</td>
+                  <td style="text-align: right; color: #ffffff;">${recipient.name} (${recipient.role})</td>
+                </tr>
+                <tr>
+                  <td style="color: #a855f7; font-weight: 600; padding: 2px 0;">Team:</td>
+                  <td style="text-align: right; color: #ffffff;">${team.name}</td>
+                </tr>
+                <tr>
+                  <td style="color: #a855f7; font-weight: 600; padding: 2px 0;">Event:</td>
+                  <td style="text-align: right; color: #ffffff;">${eventName}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          `}
+ 
+          <p style="font-size: 12px; color: #cbd5e0;">* Note: This coupon code is unique and valid for one-time dinner redemption on the event premises.</p>
+          
+          <footer style="margin-top: 30px; border-top: 1px solid #1a1c24; padding-top: 15px; font-size: 11px; color: #718096; text-align: center;">
+            ClubPulse Dashboard - Powered by AI & Smart Operations
+          </footer>
+        </div>
+      `,
+      attachments
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      sentCount++;
+      results.push({ email: recipient.email, coupon: recipient.couponCode, status: 'sent' });
+    } catch (error) {
+      console.error(`Error sending welcome/dinner email to ${recipient.email}:`, error);
+      results.push({ email: recipient.email, coupon: recipient.couponCode, status: 'failed', error: error.message });
     }
   }
 
-  return { mock: false, sent: sentCount > 0, sentCount, errorCount, error: lastError };
+  return { mock: false, sent: sentCount > 0, sentCount, results };
 }
 
 // ==========================================
@@ -562,16 +718,262 @@ app.post('/api/teams/register', async (req, res) => {
       idx++;
     }
 
-    const emailResult = await sendTicketEmail(newTeam, event.title, tickets);
-
     res.status(201).json({ 
       message: 'Team registered successfully', 
       team: newTeam, 
-      tickets, 
-      emailSent: emailResult.sent, 
-      mockEmail: emailResult.mock 
+      tickets
     });
   } catch (error) { res.status(400).json({ error: error.message }); }
+});
+
+// POST /api/teams/send-emails (Public)
+app.post('/api/teams/send-emails', async (req, res) => {
+  try {
+    const { teamId, tickets } = req.body;
+    if (!teamId || !tickets || !Array.isArray(tickets)) {
+      return res.status(400).json({ error: 'teamId and tickets array are required.' });
+    }
+
+    const team = await db.Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    const event = await db.Event.findById(team.registeredEvent);
+    if (!event) return res.status(404).json({ error: 'Event not found for this team' });
+
+    const emailResult = await sendTicketEmail(team, event.title, tickets);
+
+    // Save status results back to database
+    let updatedLeaderStatus = 'pending';
+    let updatedLeaderError = '';
+    const updatedMembers = team.members.map(m => {
+      return {
+        _id: m._id,
+        name: m.name,
+        email: m.email,
+        emailStatus: m.emailStatus || 'pending',
+        emailError: m.emailError || ''
+      };
+    });
+
+    if (emailResult.results && emailResult.results.length > 0) {
+      emailResult.results.forEach(resItem => {
+        if (resItem.role === 'Leader') {
+          updatedLeaderStatus = resItem.status;
+          updatedLeaderError = resItem.error || '';
+        } else {
+          const idx = updatedMembers.findIndex(m => m.email.toLowerCase() === resItem.email.toLowerCase());
+          if (idx !== -1) {
+            updatedMembers[idx].emailStatus = resItem.status;
+            updatedMembers[idx].emailError = resItem.error || '';
+          }
+        }
+      });
+    } else {
+      const status = emailResult.sent ? 'sent' : (emailResult.mock ? 'mock_sent' : 'failed');
+      updatedLeaderStatus = status;
+      updatedLeaderError = emailResult.error || '';
+      updatedMembers.forEach(m => {
+        m.emailStatus = status;
+        m.emailError = emailResult.error || '';
+      });
+    }
+
+    await db.Team.findByIdAndUpdate(teamId, {
+      leaderEmailStatus: updatedLeaderStatus,
+      leaderEmailError: updatedLeaderError,
+      members: updatedMembers
+    });
+
+    res.json({
+      message: 'Emails processed successfully',
+      emailSent: emailResult.sent,
+      mockEmail: emailResult.mock
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/teams/submit-project (Public Gateway)
+app.post('/api/teams/submit-project', async (req, res) => {
+  try {
+    const { teamId, leaderEmail, projectLiveLink, projectGithubLink, projectPptLink, projectReportLink } = req.body;
+    if (!teamId || !leaderEmail || !projectLiveLink || !projectGithubLink || !projectPptLink || !projectReportLink) {
+      return res.status(400).json({ error: 'All fields (teamId, leaderEmail, live project link, github, ppt, report) are required.' });
+    }
+
+    const team = await db.Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found with the provided Team ID.' });
+
+    // Validate leader email matches (case-insensitive)
+    if (team.leaderEmail.toLowerCase().trim() !== leaderEmail.toLowerCase().trim()) {
+      return res.status(401).json({ error: 'Invalid credentials. Leader email does not match this Team ID.' });
+    }
+
+    // Save project links to database
+    const updatedTeam = await db.Team.findByIdAndUpdate(teamId, {
+      projectLiveLink: projectLiveLink.trim(),
+      projectGithubLink: projectGithubLink.trim(),
+      projectPptLink: projectPptLink.trim(),
+      projectReportLink: projectReportLink.trim(),
+      projectSubmitted: true,
+      projectSubmittedAt: new Date()
+    }, { new: true });
+
+    res.json({
+      message: 'Project submitted successfully!',
+      team: updatedTeam
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/teams/prepare-resend (Protected)
+app.post('/api/teams/prepare-resend', authenticateToken, async (req, res) => {
+  try {
+    const { teamId, participantEmail } = req.body;
+    if (!teamId || !participantEmail) {
+      return res.status(400).json({ error: 'teamId and participantEmail are required.' });
+    }
+
+    const team = await db.Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    const event = await db.Event.findById(team.registeredEvent);
+    if (!event) return res.status(404).json({ error: 'Event not found for this team' });
+
+    let isLeader = team.leaderEmail.toLowerCase() === participantEmail.toLowerCase();
+    let memberIndex = -1;
+    if (!isLeader) {
+      memberIndex = team.members.findIndex(m => m.email.toLowerCase() === participantEmail.toLowerCase());
+      if (memberIndex === -1) {
+        return res.status(404).json({ error: 'Participant not found in this team' });
+      }
+    }
+
+    const targetName = isLeader ? team.leaderName : team.members[memberIndex].name;
+    const targetRole = isLeader ? 'Leader' : 'Member';
+    const teamIdHex = team._id.toString().toUpperCase();
+    const teamIdShort = teamIdHex.slice(-6);
+
+    const qrData = JSON.stringify({
+      teamId: team._id,
+      eventId: event._id,
+      teamName: team.name,
+      eventName: event.title,
+      participantName: targetName,
+      role: targetRole
+    });
+    const qrCode = await qrcode.toDataURL(qrData);
+
+    const participantId = isLeader
+      ? `CP-${teamIdShort}-01`
+      : `CP-${teamIdShort}-${(memberIndex + 2) < 10 ? '0' + (memberIndex + 2) : (memberIndex + 2)}`;
+
+    res.json({
+      name: targetName,
+      teamName: team.name,
+      eventName: event.title,
+      qrCode,
+      participantId,
+      college: team.college
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/teams/resend-pass (Protected)
+app.post('/api/teams/resend-pass', authenticateToken, async (req, res) => {
+  try {
+    const { teamId, participantEmail, newEmail, cardImage } = req.body;
+    if (!teamId || !participantEmail) {
+      return res.status(400).json({ error: 'teamId and participantEmail are required.' });
+    }
+
+    const team = await db.Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    const event = await db.Event.findById(team.registeredEvent);
+    if (!event) return res.status(404).json({ error: 'Event not found for this team' });
+
+    let isLeader = team.leaderEmail.toLowerCase() === participantEmail.toLowerCase();
+    let memberIndex = -1;
+    if (!isLeader) {
+      memberIndex = team.members.findIndex(m => m.email.toLowerCase() === participantEmail.toLowerCase());
+      if (memberIndex === -1) {
+        return res.status(404).json({ error: 'Participant not found in this team' });
+      }
+    }
+
+    let finalEmail = participantEmail.trim().toLowerCase();
+    if (newEmail && newEmail.trim().length > 0 && newEmail.trim().toLowerCase() !== participantEmail.toLowerCase()) {
+      finalEmail = newEmail.trim().toLowerCase();
+      if (isLeader) {
+        team.leaderEmail = finalEmail;
+      } else {
+        team.members[memberIndex].email = finalEmail;
+      }
+    }
+
+    const targetName = isLeader ? team.leaderName : team.members[memberIndex].name;
+    const targetRole = isLeader ? 'Leader' : 'Member';
+    const teamIdHex = team._id.toString().toUpperCase();
+    const teamIdShort = teamIdHex.slice(-6);
+
+    const qrData = JSON.stringify({
+      teamId: team._id,
+      eventId: event._id,
+      teamName: team.name,
+      eventName: event.title,
+      participantName: targetName,
+      role: targetRole
+    });
+    const qrCode = await qrcode.toDataURL(qrData);
+
+    const participantId = isLeader
+      ? `CP-${teamIdShort}-01`
+      : `CP-${teamIdShort}-${(memberIndex + 2) < 10 ? '0' + (memberIndex + 2) : (memberIndex + 2)}`;
+
+    const ticket = {
+      name: targetName,
+      email: finalEmail,
+      role: targetRole,
+      qrCode,
+      participantId,
+      college: team.college,
+      cardImage
+    };
+
+    const emailResult = await sendTicketEmail(team, event.title, [ticket]);
+
+    const status = emailResult.sent ? 'sent' : (emailResult.mock ? 'mock_sent' : 'failed');
+    const errorMsg = emailResult.error || '';
+
+    if (isLeader) {
+      team.leaderEmailStatus = status;
+      team.leaderEmailError = errorMsg;
+      await db.Team.findByIdAndUpdate(teamId, {
+        leaderEmail: team.leaderEmail,
+        leaderEmailStatus: status,
+        leaderEmailError: errorMsg
+      });
+    } else {
+      team.members[memberIndex].emailStatus = status;
+      team.members[memberIndex].emailError = errorMsg;
+      await db.Team.findByIdAndUpdate(teamId, {
+        members: team.members
+      });
+    }
+
+    res.json({
+      message: 'Email processed successfully',
+      emailSent: emailResult.sent,
+      mockEmail: emailResult.mock,
+      error: errorMsg,
+      status
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.put('/api/teams/:id/grade', authenticateToken, async (req, res) => {
@@ -614,6 +1016,7 @@ app.post('/api/teams/:id/attend', async (req, res) => {
       }
       res.json({ message: 'Team attendance removed successfully', team });
     } else {
+      let welcomeEmailsResult = null;
       if (!isAlreadyAttended) {
         team.attendedEvents.push(eventId);
         await db.Team.findByIdAndUpdate(team._id, { attendedEvents: team.attendedEvents });
@@ -623,8 +1026,18 @@ app.post('/api/teams/:id/attend', async (req, res) => {
             engagementScore: (leaderMember.engagementScore || 0) + 20
           });
         }
+        try {
+          welcomeEmailsResult = await sendWelcomeAndCouponEmails(team, event.title);
+        } catch (emailErr) {
+          console.error('Error sending welcome and coupon emails:', emailErr);
+        }
       }
-      res.json({ message: 'Team attendance recorded successfully', team });
+      res.json({ 
+        message: 'Team attendance recorded successfully', 
+        team,
+        welcomeEmailsSent: welcomeEmailsResult ? welcomeEmailsResult.sent : false,
+        welcomeEmailsMock: welcomeEmailsResult ? welcomeEmailsResult.mock : false
+      });
     }
   } catch (error) { res.status(400).json({ error: error.message }); }
 });

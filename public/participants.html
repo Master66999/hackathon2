@@ -77,6 +77,37 @@
       </form>
     </div>
   </div>
+
+  <!-- Resend Pass Modal -->
+  <div class="modal-overlay" id="resend-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Resend Participant ID Card</h3>
+        <i class="fa-solid fa-xmark modal-close" onclick="closeResendModal()"></i>
+      </div>
+      <form id="resend-form" onsubmit="triggerResend(event)">
+        <input type="hidden" id="resend-team-id">
+        <input type="hidden" id="resend-participant-email">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="resend-name">Participant Name</label>
+            <input type="text" id="resend-name" class="form-control" readonly style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted);">
+          </div>
+          <div class="form-group">
+            <label for="resend-email-input">Recipient Email Address</label>
+            <input type="email" id="resend-email-input" class="form-control" placeholder="enter email..." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeResendModal()">Cancel</button>
+          <button type="submit" class="btn btn-mint" id="resend-submit-btn">
+            <i class="fa-solid fa-paper-plane"></i> Send Pass
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/auth.js"></script>
   <script src="js/layout.js"></script>
   <script>
@@ -149,10 +180,37 @@
 
           const attendedCount = team.attendedEvents ? team.attendedEvents.length : 0;
 
+          const submissionHtml = team.projectSubmitted
+            ? `<div style="background: rgba(0, 255, 204, 0.03); border: 1px solid var(--mint-glow); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--mint); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-circle-check"></i> Project Gateway Submission
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <a href="${team.projectLiveLink}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 4px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-color: var(--border-color);">
+                    <i class="fa-solid fa-globe" style="color: var(--mint);"></i> Live Demo
+                  </a>
+                  <a href="${team.projectGithubLink}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 4px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-color: var(--border-color);">
+                    <i class="fa-brands fa-github" style="color: var(--violet);"></i> GitHub Repo
+                  </a>
+                  <a href="${team.projectPptLink}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 4px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-color: var(--border-color);">
+                    <i class="fa-solid fa-file-powerpoint" style="color: var(--rose);"></i> Presentation
+                  </a>
+                  <a href="${team.projectReportLink}" target="_blank" class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 4px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-color: var(--border-color);">
+                    <i class="fa-solid fa-file-lines" style="color: var(--gold);"></i> Report PDF
+                  </a>
+                </div>
+              </div>`
+            : `<div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 14px; font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center;">
+                <i class="fa-solid fa-clock"></i> No project submitted yet.
+              </div>`;
+
           const isLeaderClubMember = allMembers.some(m => m.email.toLowerCase() === team.leaderEmail.toLowerCase());
           const leaderBadgeOrBtn = isLeaderClubMember
             ? `<span class="badge badge-active" style="padding: 2px 6px; font-size: 9px; font-weight: 600; text-transform: none; letter-spacing: 0;"><i class="fa-solid fa-circle-check"></i> Club Member</span>`
             : `<button class="btn btn-mint btn-xs" style="font-size: 9px; padding: 2px 6px;" onclick="assignToClub('${team.leaderName.replace(/'/g, "\\'")}', '${team.leaderEmail.replace(/'/g, "\\'")}')"><i class="fa-solid fa-user-plus"></i> Assign to Club</button>`;
+
+          const leaderStatusColor = getEmailStatusColor(team.leaderEmailStatus);
+          const leaderStatusIcon = getEmailStatusIcon(team.leaderEmailStatus);
 
           grid.innerHTML += `
             <div class="card event-card" id="team-${team._id}">
@@ -166,14 +224,24 @@
               <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-shield-halved" style="color: var(--violet); font-size: 14px;"></i> ${team.name}
               </h4>
-              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                <span>Leader: <strong>${team.leaderName}</strong> (${team.leaderEmail})</span>
-                ${leaderBadgeOrBtn}
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                  <span>Leader: <strong>${team.leaderName}</strong> (${team.leaderEmail})</span>
+                  ${leaderBadgeOrBtn}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding-left: 2px;">
+                  <span style="font-size: 10px; color: ${leaderStatusColor}; font-weight: 600;">
+                    <i class="fa-solid ${leaderStatusIcon}"></i> Email: ${team.leaderEmailStatus || 'pending'}
+                  </span>
+                  <button class="btn btn-secondary btn-xs" style="font-size: 9px; padding: 2px 6px;" onclick="openResendModal('${team._id}', '${team.leaderName.replace(/'/g, "\\'")}', '${team.leaderEmail.replace(/'/g, "\\'")}', '${eventName.replace(/'/g, "\\'")}', '${team.college.replace(/'/g, "\\'")}', true)">
+                    <i class="fa-solid fa-paper-plane"></i> Resend Pass
+                  </button>
+                </div>
               </div>
               
               <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
                 <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px;">Members (${team.members ? team.members.length : 0})</div>
-                <ul style="list-style: none; font-size: 12px; color: var(--text-primary); display: flex; flex-direction: column; gap: 6px;">
+                <ul style="list-style: none; font-size: 12px; color: var(--text-primary); display: flex; flex-direction: column; gap: 8px;">
                   ${team.members && team.members.length > 0 
                     ? team.members.map(m => {
                         const isClubMember = allMembers.some(cm => cm.email.toLowerCase() === m.email.toLowerCase());
@@ -181,9 +249,22 @@
                           ? `<span class="badge badge-active" style="padding: 1px 4px; font-size: 8px; font-weight: 600; text-transform: none; letter-spacing: 0;"><i class="fa-solid fa-circle-check"></i> Club Member</span>`
                           : `<button class="btn btn-mint btn-xs" style="font-size: 8px; padding: 1px 4px;" onclick="assignToClub('${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}')"><i class="fa-solid fa-user-plus"></i> Assign to Club</button>`;
                         
-                        return `<li style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
-                          <span><i class="fa-regular fa-user" style="margin-right: 6px; font-size: 10px; color: var(--violet);"></i> ${m.name} (${m.email})</span>
-                          ${memberBadgeOrBtn}
+                        const statusColor = getEmailStatusColor(m.emailStatus);
+                        const statusIcon = getEmailStatusIcon(m.emailStatus);
+
+                        return `<li style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
+                          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%;">
+                            <span><i class="fa-regular fa-user" style="margin-right: 6px; font-size: 10px; color: var(--violet);"></i> ${m.name} (${m.email})</span>
+                            ${memberBadgeOrBtn}
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 8px; padding-left: 16px;">
+                            <span style="font-size: 10px; color: ${statusColor}; font-weight: 600;">
+                              <i class="fa-solid ${statusIcon}"></i> Email: ${m.emailStatus || 'pending'}
+                            </span>
+                            <button class="btn btn-secondary btn-xs" style="font-size: 9px; padding: 1px 4px;" onclick="openResendModal('${team._id}', '${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}', '${eventName.replace(/'/g, "\\'")}', '${team.college.replace(/'/g, "\\'")}', false)">
+                              <i class="fa-solid fa-paper-plane"></i> Resend Pass
+                            </button>
+                          </div>
                         </li>`;
                       }).join('')
                     : '<li style="color: var(--text-muted); font-style: italic;">No additional team members listed.</li>'
@@ -194,6 +275,8 @@
               <div style="font-size: 13px; margin-bottom: 8px;">
                 <span style="color: var(--text-secondary);">Topic:</span> ${problemText}
               </div>
+              
+              ${submissionHtml}
               
               <div style="font-size: 13px; margin-bottom: 16px;">
                 <span style="color: var(--text-secondary);">Check-ins:</span> 
@@ -297,6 +380,182 @@
         }
       } catch (err) {
         console.error('Error checking in team:', err);
+      }
+    }
+
+    function getEmailStatusColor(status) {
+      if (status === 'sent' || status === 'mock_sent') return 'var(--mint)';
+      if (status === 'failed') return 'var(--rose)';
+      return 'var(--text-muted)';
+    }
+
+    function getEmailStatusIcon(status) {
+      if (status === 'sent' || status === 'mock_sent') return 'fa-circle-check';
+      if (status === 'failed') return 'fa-circle-xmark';
+      return 'fa-clock';
+    }
+
+    function openResendModal(teamId, name, email, eventName, college, isLeader) {
+      document.getElementById('resend-team-id').value = teamId;
+      document.getElementById('resend-participant-email').value = email;
+      document.getElementById('resend-name').value = `${name} (${isLeader ? 'Leader' : 'Member'})`;
+      document.getElementById('resend-email-input').value = email;
+      document.getElementById('resend-modal').classList.add('active');
+    }
+
+    function closeResendModal() {
+      document.getElementById('resend-modal').classList.remove('active');
+    }
+
+    function generatePassDataUrl(name, teamName, eventName, qrCodeDataUrl, teamId, participantId, college) {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 768;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+
+        const bgImg = new Image();
+        bgImg.onload = () => {
+          ctx.drawImage(bgImg, 0, 0, 768, 1024);
+
+          const qrImg = new Image();
+          qrImg.onload = () => {
+            const qrSize = 200;
+            const qrX = 255 - (qrSize / 2);
+            const qrY = 531 - (qrSize / 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 12);
+            } else {
+              ctx.rect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+            }
+            ctx.fill();
+            ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            ctx.font = '700 22px "Outfit", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(name.toUpperCase(), 480, 409);
+
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillText(teamName.toUpperCase(), 480, 462);
+
+            ctx.font = '700 20px monospace';
+            ctx.fillStyle = '#a855f7';
+            ctx.fillText(teamId.toUpperCase().slice(-12), 480, 548);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText(participantId, 480, 640);
+
+            ctx.font = '700 22px "Outfit", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#cbd5e0';
+            ctx.fillText(college.toUpperCase(), 480, 728);
+
+            ctx.textAlign = 'center';
+            ctx.font = '800 28px "Outfit", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillText(eventName.toUpperCase(), 384, 825);
+
+            resolve(canvas.toDataURL('image/png'));
+          };
+          qrImg.onerror = () => {
+            console.error('Failed to load QR image on canvas generation, resolving without QR');
+            resolve(canvas.toDataURL('image/png'));
+          };
+          qrImg.src = qrCodeDataUrl;
+        };
+        bgImg.onerror = () => {
+          console.error('Failed to load background image on canvas generation, resolving with blank canvas');
+          resolve(canvas.toDataURL('image/png'));
+        };
+        bgImg.src = 'get-pass.png';
+      });
+    }
+
+    async function triggerResend(e) {
+      e.preventDefault();
+      const teamId = document.getElementById('resend-team-id').value;
+      const participantEmail = document.getElementById('resend-participant-email').value;
+      const newEmail = document.getElementById('resend-email-input').value;
+      const submitBtn = document.getElementById('resend-submit-btn');
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must be logged in as admin to perform this action.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing Pass...';
+
+      try {
+        // Step 1: Prepare details (fetches deterministic QR code and ticket metadata from server)
+        const prepRes = await fetch('/api/teams/prepare-resend', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ teamId, participantEmail })
+        });
+
+        if (!prepRes.ok) {
+          const prepErr = await prepRes.json();
+          alert(prepErr.error || 'Failed to prepare resend pass.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Pass';
+          return;
+        }
+
+        const prepData = await prepRes.json();
+
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Card...';
+
+        // Step 2: Draw the card on the client-side canvas
+        const cardImage = await generatePassDataUrl(
+          prepData.name,
+          prepData.teamName,
+          prepData.eventName,
+          prepData.qrCode,
+          teamId,
+          prepData.participantId,
+          prepData.college
+        );
+
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mailing Pass...';
+
+        // Step 3: Trigger the server to email the generated pass
+        const resendRes = await fetch('/api/teams/resend-pass', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            teamId,
+            participantEmail,
+            newEmail,
+            cardImage
+          })
+        });
+
+        const resendData = await resendRes.json();
+        if (resendRes.ok) {
+          alert('ID Card pass email sent successfully!');
+          closeResendModal();
+          loadInitialData();
+        } else {
+          alert(resendData.error || 'Failed to resend pass email.');
+        }
+      } catch (err) {
+        console.error('Error resending pass:', err);
+        alert('An unexpected error occurred.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Pass';
       }
     }
 
