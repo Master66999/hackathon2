@@ -484,20 +484,17 @@ app.delete('/api/members/:id', authenticateToken, async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// 3. Events Management (Public route for registration/check-in page)
 app.get('/api/public/events', async (req, res) => {
   try {
     const { email } = req.query;
-    let query = {};
-    if (email && email.trim().length > 0) {
-      const user = await db.User.findOne({ email: email.toLowerCase().trim() });
-      if (user) {
-        query = { userId: user._id };
-      } else {
-        return res.json([]);
-      }
+    if (!email || email.trim().length === 0) {
+      return res.json([]);
     }
-    const events = await db.Event.find(query).sort({ date: 1 });
+    const user = await db.User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.json([]);
+    }
+    const events = await db.Event.find({ userId: user._id }).sort({ date: 1 });
     res.json(events);
   } catch (error) {
     res.status(500).json({ error: error.message });

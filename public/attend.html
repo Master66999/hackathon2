@@ -195,6 +195,7 @@
     link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
     document.head.appendChild(link);
   </script>
+  <script src="js/auth.js"></script>
   <script>
     let allEvents = [];
 
@@ -229,7 +230,14 @@
     async function loadEvents() {
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const emailParam = urlParams.get('email');
+        let emailParam = urlParams.get('email');
+
+        if (!emailParam && window.AuthHelper) {
+          const loggedInUser = window.AuthHelper.getUser();
+          if (loggedInUser && loggedInUser.email) {
+            emailParam = loggedInUser.email;
+          }
+        }
 
         let apiUrl = '/api/public/events';
         if (emailParam) {
