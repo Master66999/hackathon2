@@ -19,6 +19,16 @@
         </a>
       </div>
 
+      <!-- Filters Section -->
+      <div class="card" style="padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <label for="event-filter" style="font-size: 14px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-filter" style="color: var(--mint);"></i> Filter by Event:
+        </label>
+        <select id="event-filter" class="form-control" style="width: auto; min-width: 250px; padding: 8px 36px 8px 16px; background-position: right 14px center;" onchange="renderTeams()">
+          <option value="">All Events</option>
+        </select>
+      </div>
+
       <!-- Teams Grid -->
       <div class="events-grid" id="teams-grid">
         <!-- Dynamically loaded team cards -->
@@ -126,9 +136,22 @@
         const membersRes = await fetch('/api/members');
         allMembers = await membersRes.json();
         
+        populateEventFilter();
         renderTeams();
       } catch (err) {
         console.error('Error loading initial data:', err);
+      }
+    }
+
+    function populateEventFilter() {
+      const select = document.getElementById('event-filter');
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">All Events</option>';
+      allEvents.forEach(e => {
+        select.innerHTML += `<option value="${e._id}">${e.title}</option>`;
+      });
+      if (currentValue && allEvents.some(e => e._id === currentValue)) {
+        select.value = currentValue;
       }
     }
 
@@ -166,8 +189,13 @@
       const grid = document.getElementById('teams-grid');
       grid.innerHTML = '';
 
-      if (allTeams.length > 0) {
-        allTeams.forEach(team => {
+      const selectedEventId = document.getElementById('event-filter').value;
+      const filteredTeams = selectedEventId
+        ? allTeams.filter(team => team.registeredEvent && team.registeredEvent._id === selectedEventId)
+        : allTeams;
+
+      if (filteredTeams.length > 0) {
+        filteredTeams.forEach(team => {
           const eventName = team.registeredEvent ? team.registeredEvent.title : 'Unknown Event';
           const problemText = team.problemStatement 
             ? `<span style="color: var(--mint); font-weight: 600;">${team.problemStatement}</span>`
@@ -300,7 +328,8 @@
           `;
         });
       } else {
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No registered teams found.</div>`;
+        const msg = selectedEventId ? 'No registered teams found for this event.' : 'No registered teams found.';
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">${msg}</div>`;
       }
     }
 

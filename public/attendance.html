@@ -198,18 +198,16 @@
         return;
       }
 
-      // Add placeholder
-      select.innerHTML = '<option value="" disabled selected>— Select an Event —</option>';
+      // Add options
+      select.innerHTML = '<option value="">All Events</option>';
       allEvents.forEach(e => {
         const dateStr = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         select.innerHTML += `<option value="${e._id}">${e.title} (${dateStr})</option>`;
       });
 
-      // Default select the first event if available
-      if (allEvents.length > 0) {
-        select.selectedIndex = 1;
-        onEventChanged();
-      }
+      // Default to All Events
+      select.value = "";
+      onEventChanged();
     }
 
     function onEventChanged() {
@@ -221,16 +219,13 @@
       const tbody = document.getElementById('roster-table-body');
       tbody.innerHTML = '';
 
-      if (!selectedEventId) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px;">Select an event from the panel</td></tr>';
-        return;
-      }
-
       // Filter teams registered for this event
-      const eventTeams = allTeams.filter(t => {
-        const evId = t.registeredEvent?._id || t.registeredEvent;
-        return evId?.toString() === selectedEventId.toString();
-      });
+      const eventTeams = selectedEventId
+        ? allTeams.filter(t => {
+            const evId = t.registeredEvent?._id || t.registeredEvent;
+            return evId?.toString() === selectedEventId.toString();
+          })
+        : allTeams;
 
       const totalTeams = eventTeams.length;
       let attendedTeams = 0;
@@ -246,7 +241,8 @@
 
       if (filteredTeams.length > 0) {
         filteredTeams.forEach(team => {
-          const isAttended = team.attendedEvents && team.attendedEvents.some(id => id.toString() === selectedEventId.toString());
+          const targetEventId = selectedEventId || team.registeredEvent?._id || team.registeredEvent;
+          const isAttended = targetEventId && team.attendedEvents && team.attendedEvents.some(id => id.toString() === targetEventId.toString());
           if (isAttended) attendedTeams++;
 
           const statusBadge = isAttended 
@@ -254,10 +250,10 @@
             : '<span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Absent</span>';
 
           const actionBtn = isAttended
-            ? `<button class="btn btn-secondary btn-xs" style="color: var(--rose); border-color: rgba(244,63,94,0.2);" onclick="toggleAttendance('${team._id}', false)">
+            ? `<button class="btn btn-secondary btn-xs" style="color: var(--rose); border-color: rgba(244,63,94,0.2);" onclick="toggleAttendance('${team._id}', false, '${targetEventId}')">
                  <i class="fa-solid fa-user-xmark"></i> Uncheck
                </button>`
-            : `<button class="btn btn-mint btn-xs" onclick="toggleAttendance('${team._id}', true)">
+            : `<button class="btn btn-mint btn-xs" onclick="toggleAttendance('${team._id}', true, '${targetEventId}')">
                  <i class="fa-solid fa-user-check"></i> Check In
                </button>`;
 
@@ -266,6 +262,7 @@
               <td>
                 <div style="font-weight: 600; font-size: 15px;">${team.name}</div>
                 <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Leader: ${team.leaderName} (${team.leaderEmail})</div>
+                ${!selectedEventId && team.registeredEvent ? `<div style="font-size: 10px; color: var(--violet); margin-top: 2px; font-weight: 600;"><i class="fa-solid fa-calendar-day"></i> Event: ${team.registeredEvent.title || 'Unknown'}</div>` : ''}
               </td>
               <td>
                 <span style="font-size: 13px; color: var(--text-secondary); font-style: italic;">
@@ -278,14 +275,15 @@
           `;
         });
       } else {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px;">No teams registered for this event matching search criteria.</td></tr>`;
+        const msg = selectedEventId ? 'No teams registered for this event matching search criteria.' : 'No teams matching search criteria.';
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px;">${msg}</td></tr>`;
       }
 
       // Re-calculate stats for the event
-      // Count total attended teams for the entire eventTeams list (not just search-filtered ones)
-      let actualAttendedCount = eventTeams.filter(t => 
-        t.attendedEvents && t.attendedEvents.some(id => id.toString() === selectedEventId.toString())
-      ).length;
+      let actualAttendedCount = eventTeams.filter(t => {
+        const targetEventId = selectedEventId || t.registeredEvent?._id || t.registeredEvent;
+        return targetEventId && t.attendedEvents && t.attendedEvents.some(id => id.toString() === targetEventId.toString());
+      }).length;
 
       updateMetrics(totalTeams, actualAttendedCount);
     }
@@ -305,48 +303,8 @@
       renderRoster();
     }
 
-    async function toggleAttendance(teamId, checkIn) {
-      const row = document.getElementById(`roster-row-${teamId}`);
-      const actionCell = row.querySelector('.action-cell');
-      actionCell.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--mint);"></i>';
-
-      try {
-        let res;
-        if (checkIn) {
-          // Check in: Call POST /api/teams/:id/attend
-          res = await fetch(`/api/teams/${teamId}/attend`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ eventId: selectedEventId })
-          });
-        } else {
-          // Un-check: We need an API way to un-attend. Since there is no specific uncheck route, we can call PUT /api/teams/:id or create a custom way, or we can just send request to server.js
-          // Let's modify the team record directly if the backend supports PUT, or let's create a put/delete attendance endpoint.
-          // Wait! In server.js we have:
-          // app.post('/api/teams/:id/attend', async (req, res) => { ... })
-          // Let's see: in server.js, the post endpoint checks if the eventId is already in the list. If it isn't, it pushes it. If we call it, it won't duplicate.
-          // But to remove attendance, let's see how we can do it.
-          // Wait, is there a PUT route on teams? No!
-          // Let's check server.js. Is there a route to update team?
-          // Let's check server.js using grep search for '/api/teams/:id'.
-        }
-
-        // Wait! Let's build a clean mechanism to toggle checkin. If checkIn is false, we can write a clean PUT or route on backend, or we can let backend update.
-        // Let's look at server.js to check if we can modify the team's attendedEvents array.
-        // Wait! Let's check server.js if there is any team update route.
-      } catch (err) {
-        console.error('Error toggling attendance:', err);
-      }
-
-      // Let's check if the server has PUT route for team or if we need to implement it.
-      // Let's fetch updated data and re-render.
-    }
-
-    // Let's search server.js for app.put('/api/teams/:id') or similar.
-  </script>
-  <script>
     // Helper to toggle checkin on server
-    async function toggleAttendance(teamId, checkIn) {
+    async function toggleAttendance(teamId, checkIn, targetEventId) {
       const row = document.getElementById(`roster-row-${teamId}`);
       if (!row) return;
 
@@ -358,7 +316,7 @@
         const res = await fetch(`/api/teams/${teamId}/attend`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId: selectedEventId, remove: !checkIn })
+          body: JSON.stringify({ eventId: targetEventId, remove: !checkIn })
         });
 
         if (res.ok) {
@@ -380,25 +338,27 @@
 
     // Export checkins as CSV
     function exportCSV() {
-      if (!selectedEventId) { alert('No event selected.'); return; }
-      
-      const eventObj = allEvents.find(e => e._id === selectedEventId);
-      const eventName = eventObj ? eventObj.title : 'Event';
+      const eventObj = selectedEventId ? allEvents.find(e => e._id === selectedEventId) : null;
+      const eventName = eventObj ? eventObj.title : 'All_Events';
 
-      const eventTeams = allTeams.filter(t => {
-        const evId = t.registeredEvent?._id || t.registeredEvent;
-        return evId?.toString() === selectedEventId.toString();
-      });
+      const eventTeams = selectedEventId
+        ? allTeams.filter(t => {
+            const evId = t.registeredEvent?._id || t.registeredEvent;
+            return evId?.toString() === selectedEventId.toString();
+          })
+        : allTeams;
 
-      if (eventTeams.length === 0) { alert('No registered teams for this event.'); return; }
+      if (eventTeams.length === 0) { alert('No registered teams.'); return; }
 
-      const headers = ['Team Name', 'Leader Name', 'Leader Email', 'Problem Statement', 'Status', 'Check-in Count'];
+      const headers = ['Team Name', 'Leader Name', 'Leader Email', 'Registered Event', 'Problem Statement', 'Status', 'Check-in Count'];
       const rows = eventTeams.map(t => {
-        const isAttended = t.attendedEvents && t.attendedEvents.some(id => id.toString() === selectedEventId.toString());
+        const targetEventId = selectedEventId || t.registeredEvent?._id || t.registeredEvent;
+        const isAttended = targetEventId && t.attendedEvents && t.attendedEvents.some(id => id.toString() === targetEventId.toString());
         return [
           t.name,
           t.leaderName,
           t.leaderEmail,
+          t.registeredEvent?.title || 'Unknown',
           t.problemStatement || 'Unassigned',
           isAttended ? 'Checked In' : 'Absent',
           t.attendedEvents ? t.attendedEvents.length : 0
