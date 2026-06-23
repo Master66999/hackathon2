@@ -1232,6 +1232,183 @@ app.post('/api/ai/auto-schedule', authenticateToken, async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+app.get('/api/events/:id/details-report', authenticateToken, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const event = await db.Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    // Fetch all teams registered for this event
+    const teams = await db.Team.find({ registeredEvent: eventId });
+
+    // Find the winner(s)
+    let winnerText = 'No winner determined yet (grades are pending).';
+    if (teams.length > 0) {
+      const gradedTeams = teams.filter(t => t.performanceGrade != null && t.performanceGrade > 0);
+      if (gradedTeams.length > 0) {
+        gradedTeams.sort((a, b) => b.performanceGrade - a.performanceGrade);
+        const maxGrade = gradedTeams[0].performanceGrade;
+        const winners = gradedTeams.filter(t => t.performanceGrade === maxGrade);
+        winnerText = winners.map(w => `${w.name} (${w.performanceGrade}/100) from ${w.college || 'N/A'}`).join(', ');
+      }
+    }
+
+    // Format a beautiful text report
+    let txt = `================================================================================
+                       EVENT DETAILS & PERFORMANCE REPORT
+================================================================================
+
+EVENT METADATA
+--------------------------------------------------------------------------------
+Title:        ${event.title}
+Type:         ${event.type}
+Date:         ${event.date ? new Date(event.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+Location:     ${event.location}
+Venue:        ${event.venue || 'N/A'}
+Organizer:    ${event.organizer || 'N/A'}
+Capacity:     ${event.maxCapacity} teams
+
+WINNERS PODIUM
+--------------------------------------------------------------------------------
+Winner:       ${winnerText}
+
+PARTICIPATING TEAMS & MARKS
+--------------------------------------------------------------------------------
+Total Teams:  ${teams.length}
+`;
+
+    if (teams.length === 0) {
+      txt += `\nNo teams registered for this event yet.`;
+    } else {
+      teams.forEach((t, index) => {
+        txt += `\n--------------------------------------------------------------------------------
+${index + 1}. TEAM: ${t.name}
+   Topic:           ${t.problemStatement || 'Not allocated'}
+   College:         ${t.college || 'N/A'}
+   Team Grade/Marks:${t.performanceGrade != null ? t.performanceGrade + '/100' : 'Pending'}
+   Feedback:        ${t.performanceFeedback || 'N/A'}
+   
+   LEADER:
+   Name:            ${t.leaderName}
+   Email:           ${t.leaderEmail}
+   
+   ADDITIONAL MEMBERS:
+`;
+        if (!t.members || t.members.length === 0) {
+          txt += `   None added\n`;
+        } else {
+          t.members.forEach((m, mIdx) => {
+            txt += `   [${mIdx + 1}] Name: ${m.name} | Email: ${m.email}\n`;
+          });
+        }
+      });
+    }
+
+    txt += `\n================================================================================
+Generated automatically by ClubPulse on ${new Date().toLocaleString()}
+================================================================================`;
+
+    res.json({
+      report: txt,
+      filename: `event-report-${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/events/:id/email-certificates', authenticateToken, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const event = await db.Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    const { certificates } = req.body;
+    if (!certificates || !Array.isArray(certificates)) {
+      return res.status(400).json({ error: 'certificates array is required' });
+    }
+
+    const results = [];
+    if (!transporter) {
+      // Mock sending certificates
+      certificates.forEach(c => {
+        console.log(`[MOCK EMAIL CERTIFICATE] To: ${c.email} | Name: ${c.name}`);
+        console.log(`Subject: 🎓 Certificate of Participation for ${event.title} - ${c.name}`);
+        console.log(`Body: Hi ${c.name}, congratulations on participating in ${event.title}! Your certificate is attached.`);
+        results.push({ email: c.email, name: c.name, status: 'mock_sent', error: '' });
+      });
+      return res.json({
+        message: 'Mock certificates sent successfully (no transporter configured)',
+        mock: true,
+        sentCount: certificates.length,
+        results
+      });
+    }
+
+    let sentCount = 0;
+    let errorCount = 0;
+    
+    for (const c of certificates) {
+      if (!c.email || c.email.trim().length === 0) continue;
+
+      const attachments = [];
+      if (c.cardImage && c.cardImage.startsWith('data:image/')) {
+        const parts = c.cardImage.split(';base64,');
+        if (parts.length === 2) {
+          const extension = parts[0].split(':')[1].split('/')[1] || 'png';
+          const buffer = Buffer.from(parts[1], 'base64');
+          attachments.push({
+            filename: `certificate-${c.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.${extension}`,
+            content: buffer
+          });
+        }
+      }
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: c.email,
+        subject: `🎓 Certificate of Participation for ${event.title} - ${c.name}`,
+        html: `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h2 style="color: #059669; margin: 0;">Congratulations ${c.name}!</h2>
+              <p style="color: #64748b; font-size: 14px; margin-top: 4px;">You have successfully participated in <strong>${event.title}</strong>.</p>
+            </div>
+            <div style="line-height: 1.6; font-size: 15px; margin-bottom: 24px;">
+              <p>Hi <strong>${c.name}</strong>,</p>
+              <p>Thank you for being a part of <strong>${event.title}</strong>! We are thrilled to present you with your official <strong>Certificate of Participation</strong>.</p>
+              <p>Your certificate is attached to this email. Feel free to download, print, or share it on your social media channels to showcase your achievement!</p>
+            </div>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+              <p>&copy; 2026 ClubPulse. Sent on behalf of the event organizers.</p>
+            </div>
+          </div>
+        `,
+        attachments
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        sentCount++;
+        results.push({ email: c.email, name: c.name, status: 'sent', error: '' });
+      } catch (mailErr) {
+        console.error(`Failed to send certificate to ${c.email}:`, mailErr);
+        errorCount++;
+        results.push({ email: c.email, name: c.name, status: 'failed', error: mailErr.message });
+      }
+    }
+
+    res.json({
+      message: `Successfully emailed certificates to ${sentCount} participants.`,
+      sentCount,
+      errorCount,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 8. AI Event-Specific Report
 app.post('/api/ai/event-report', authenticateToken, async (req, res) => {
   try {

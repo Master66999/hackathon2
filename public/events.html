@@ -227,6 +227,9 @@
                 <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="openAttendanceModal('${event._id}')">
                   <i class="fa-solid fa-clipboard-user"></i> Attend
                 </button>
+                <button class="btn btn-secondary btn-sm btn-dl-report" id="btn-dl-${event._id}" onclick="downloadEventReport('${event._id}', '${event.title.replace(/'/g, "\\'")}')" title="Download Report" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.15); color: var(--mint); transition: all 0.2s;">
+                  <i class="fa-solid fa-file-arrow-down"></i>
+                </button>
                 <button class="btn btn-secondary btn-sm" onclick="editEvent('${event._id}')">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
@@ -296,13 +299,28 @@
     async function saveEvent(e) {
       e.preventDefault();
       const id = document.getElementById('event-id').value;
+      const title = document.getElementById('event-title').value;
+      const statusVal = document.getElementById('event-status').value;
+      
+      let shouldSendCertificates = false;
+      if (statusVal === 'completed') {
+        if (id) {
+          const oldEvent = allEvents.find(ev => ev._id === id);
+          if (oldEvent && oldEvent.status !== 'completed') {
+            shouldSendCertificates = true;
+          }
+        } else {
+          shouldSendCertificates = true; // newly created completed event
+        }
+      }
+
       const payload = {
-        title: document.getElementById('event-title').value,
+        title,
         description: document.getElementById('event-desc').value,
         date: new Date(document.getElementById('event-date').value).toISOString(),
         location: document.getElementById('event-location').value,
         type: document.getElementById('event-type').value,
-        status: document.getElementById('event-status').value,
+        status: statusVal,
         maxCapacity: parseInt(document.getElementById('event-capacity').value) || 100,
         organizer: document.getElementById('event-organizer').value
       };
@@ -318,8 +336,13 @@
         });
 
         if (res.ok) {
+          const savedEvent = await res.json();
           closeEventModal();
-          loadEvents();
+          await loadEvents();
+          
+          if (shouldSendCertificates) {
+            triggerCertificateGenerationAndEmail(savedEvent._id, savedEvent.title);
+          }
         } else {
           alert('Failed to save event.');
         }
@@ -642,6 +665,189 @@
       for (let day = 1; day <= remainingCells; day++) {
         const nextMonthDate = new Date(year, month + 1, day);
         daysGrid.appendChild(createDayCell(day, nextMonthDate, false));
+      }
+    }
+
+    function generateCertificateDataUrl(name, img) {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+
+        // Draw background template
+        ctx.drawImage(img, 0, 0);
+
+        // Configure text style
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#0f172a'; // Premium dark slate color
+        
+        // Font size scales with image resolution (approx 4.2% of width)
+        const fontSize = Math.round(canvas.width * 0.042);
+        ctx.font = `italic 700 ${fontSize}px 'Outfit', 'Segoe UI', sans-serif`;
+
+        // Position name in the middle space (Y coordinate is ~46.5% of height)
+        const nameX = canvas.width / 2;
+        const nameY = Math.round(canvas.height * 0.465);
+
+        ctx.fillText(name, nameX, nameY);
+
+        resolve(canvas.toDataURL('image/jpeg', 0.88));
+      });
+    }
+
+    async function triggerCertificateGenerationAndEmail(eventId, eventTitle) {
+      try {
+        // Show status feedback overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'cert-loading-overlay';
+        overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; color: #fff; font-family: "Outfit", sans-serif;';
+        overlay.innerHTML = `
+          <div style="background: var(--bg-card, #fff); color: var(--text-primary, #0f172a); border: 1px solid var(--border-color); padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+            <div style="font-size: 40px; margin-bottom: 16px;">🎓</div>
+            <h4 style="font-weight: 700; margin-bottom: 8px;">Generating Certificates</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;" id="cert-loading-text">Fetching participant database...</p>
+            <div style="width: 100%; height: 6px; background: rgba(15, 23, 42, 0.05); border-radius: 10px; overflow: hidden; position: relative;">
+              <div id="cert-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--violet), var(--mint)); transition: width 0.3s; border-radius: 10px;"></div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const progressText = document.getElementById('cert-loading-text');
+        const progressBar = document.getElementById('cert-progress-bar');
+
+        // 1. Fetch all teams
+        const teamsRes = await fetch('/api/teams');
+        const allTeams = await teamsRes.json();
+        
+        // Filter teams registered for this event
+        const eventTeams = allTeams.filter(t => {
+          const registeredId = t.registeredEvent?._id || t.registeredEvent;
+          return registeredId && registeredId.toString() === eventId.toString();
+        });
+
+        if (eventTeams.length === 0) {
+          overlay.remove();
+          alert('No teams registered for this event. No certificates were generated.');
+          return;
+        }
+
+        // 2. Load template image
+        progressText.innerText = 'Loading certificate template...';
+        progressBar.style.width = '20%';
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('Failed to load certificate template image.'));
+          img.src = 'certificate-template.jpg';
+        });
+
+        progressBar.style.width = '40%';
+        progressText.innerText = 'Creating personalized certificates...';
+
+        // 3. Collect participants and generate certificates
+        const certificates = [];
+        let totalCount = 0;
+        eventTeams.forEach(t => {
+          totalCount += 1 + (t.members ? t.members.length : 0);
+        });
+
+        let generatedCount = 0;
+        for (const t of eventTeams) {
+          // Leader
+          const leaderCert = await generateCertificateDataUrl(t.leaderName, img);
+          certificates.push({
+            name: t.leaderName,
+            email: t.leaderEmail,
+            cardImage: leaderCert
+          });
+          generatedCount++;
+          progressBar.style.width = `${40 + Math.round((generatedCount / totalCount) * 40)}%`;
+
+          // Members
+          if (t.members && t.members.length > 0) {
+            for (const m of t.members) {
+              if (m.name && m.email) {
+                const memberCert = await generateCertificateDataUrl(m.name, img);
+                certificates.push({
+                  name: m.name,
+                  email: m.email,
+                  cardImage: memberCert
+                });
+                generatedCount++;
+                progressBar.style.width = `${40 + Math.round((generatedCount / totalCount) * 40)}%`;
+              }
+            }
+          }
+        }
+
+        // 4. Email certificates
+        progressText.innerText = 'Emailing certificates to participants...';
+        progressBar.style.width = '90%';
+
+        const emailRes = await fetch(`/api/events/${eventId}/email-certificates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ certificates })
+        });
+        const emailData = await emailRes.json();
+
+        progressBar.style.width = '100%';
+        progressText.innerText = 'All certificates sent successfully!';
+        
+        setTimeout(() => {
+          overlay.remove();
+          alert(`Success! Successfully generated and emailed ${emailData.sentCount || certificates.length} certificates for ${eventTitle}.`);
+        }, 1000);
+
+      } catch (err) {
+        console.error('Certificate generation error:', err);
+        const overlay = document.getElementById('cert-loading-overlay');
+        if (overlay) overlay.remove();
+        alert('Error generating and emailing certificates: ' + err.message);
+      }
+    }
+
+    async function downloadEventReport(eventId, eventTitle) {
+      const btn = document.getElementById(`btn-dl-${eventId}`);
+      if (!btn) return;
+
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+      try {
+        const res = await fetch(`/api/events/${eventId}/details-report`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to download report');
+
+        const blob = new Blob([data.report], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = data.filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        // Success State
+        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--mint);"></i>';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }, 1500);
+      } catch (err) {
+        alert(err.message || 'Error downloading event details report.');
+        
+        // Error State
+        btn.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: var(--rose);"></i>';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }, 1500);
       }
     }
 

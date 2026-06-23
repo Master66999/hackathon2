@@ -112,6 +112,16 @@
             ">
             <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Event Analysis
           </button>
+          <button id="btn-download-event-data" class="btn btn-primary" onclick="downloadEventReportDetails()"
+            style="
+              background: linear-gradient(135deg, var(--violet), var(--mint));
+              color: #ffffff;
+              border: none;
+              font-weight: 700;
+              transition: all 0.2s;
+            ">
+            <i class="fa-solid fa-download"></i> Download Event Data
+          </button>
         </div>
         <div id="event-select-error" style="color: var(--rose); font-size:12px; margin-top:8px; display:none;">
           ⚠ Please select an event first.
@@ -321,6 +331,50 @@
         cursor.style.display = 'none';
         hideDownloadBtn();
         termContent.innerHTML = `<span style="color: var(--rose);">[ERROR] ${err.message || 'Could not generate event report. Check backend connection.'}</span>`;
+      }
+    }
+
+    async function downloadEventReportDetails() {
+      const select = document.getElementById('event-select');
+      const errorEl = document.getElementById('event-select-error');
+      const eventId = select.value;
+
+      if (!eventId) {
+        errorEl.style.display = 'block';
+        setTimeout(() => errorEl.style.display = 'none', 3000);
+        return;
+      }
+      errorEl.style.display = 'none';
+
+      const selectedEventName = select.options[select.selectedIndex].text;
+      
+      try {
+        const btn = document.getElementById('btn-download-event-data');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Downloading...';
+
+        const res = await fetch(`/api/events/${eventId}/details-report`);
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Failed to download report');
+        
+        const blob = new Blob([data.report], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = data.filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      } catch (err) {
+        alert(err.message || 'Error downloading event details report.');
+        const btn = document.getElementById('btn-download-event-data');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-download"></i> Download Event Data';
+        }
       }
     }
 

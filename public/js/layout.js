@@ -35,9 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <li class="nav-item ${pageName === 'index.html' ? 'active' : ''}">
             <a href="index.html"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
           </li>
-          <li class="nav-item ${pageName === 'members.html' ? 'active' : ''}">
-            <a href="members.html"><i class="fa-solid fa-users"></i> Members</a>
-          </li>
+
           <li class="nav-item ${pageName === 'events.html' ? 'active' : ''}">
             <a href="events.html"><i class="fa-solid fa-calendar-days"></i> Events</a>
           </li>
@@ -50,9 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <li class="nav-item ${pageName === 'attendance.html' ? 'active' : ''}">
             <a href="attendance.html"><i class="fa-solid fa-clipboard-user"></i> Attendance</a>
           </li>
-          <li class="nav-item ${pageName === 'analytics.html' ? 'active' : ''}">
-            <a href="analytics.html"><i class="fa-solid fa-square-poll-vertical"></i> Analytics</a>
-          </li>
+
           
           <!-- AI Utilities Dropdown -->
           <li class="nav-item dropdown ${['matchmaker.html', 'reports.html', 'mentor.html', 'pitch-analyzer.html', 'scan.html'].includes(pageName) ? 'active' : ''}" style="position: relative;">
@@ -83,12 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <div class="header-right">
-        <div class="clock" id="nav-clock">00:00:00</div>
-        <div class="db-status" id="db-status-badge">
-          <span class="status-dot active"></span>
-          <span id="db-status-text">Connecting...</span>
-        </div>
-        
         <!-- User Profile Bubble / Dropdown -->
         <div class="user-profile-menu" style="position: relative;">
           <div class="profile-avatar-trigger" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--mint)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #ffffff; cursor: pointer; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(16,185,129,0.15); transition: transform 0.2s;">
@@ -124,12 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="mobile-drawer-body" style="padding: 20px; overflow-y: auto; flex: 1;">
           <ul class="mobile-nav-list" style="list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; margin: 0;">
             <li class="${pageName === 'index.html' ? 'active' : ''}"><a href="index.html"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
-            <li class="${pageName === 'members.html' ? 'active' : ''}"><a href="members.html"><i class="fa-solid fa-users"></i> Members</a></li>
             <li class="${pageName === 'events.html' ? 'active' : ''}"><a href="events.html"><i class="fa-solid fa-calendar-days"></i> Events</a></li>
             <li class="${pageName === 'participants.html' ? 'active' : ''}"><a href="participants.html"><i class="fa-solid fa-people-group"></i> Teams</a></li>
             <li class="${pageName === 'problems.html' ? 'active' : ''}"><a href="problems.html"><i class="fa-solid fa-code"></i> Problems</a></li>
             <li class="${pageName === 'attendance.html' ? 'active' : ''}"><a href="attendance.html"><i class="fa-solid fa-clipboard-user"></i> Attendance</a></li>
-            <li class="${pageName === 'analytics.html' ? 'active' : ''}"><a href="analytics.html"><i class="fa-solid fa-square-poll-vertical"></i> Analytics</a></li>
             
             <li class="mobile-drawer-subheader" style="margin-top: 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">AI Utilities</li>
             <li class="${pageName === 'matchmaker.html' ? 'active' : ''}"><a href="matchmaker.html"><i class="fa-solid fa-people-arrows"></i> AI Matchmaker</a></li>
@@ -208,36 +196,5 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // 2. Setup Clock
-    const clockEl = document.getElementById('nav-clock');
-    if (clockEl) {
-      const updateClock = () => {
-        const now = new Date();
-        clockEl.textContent = now.toTimeString().split(' ')[0];
-      };
-      updateClock();
-      setInterval(updateClock, 1000);
-    }
-
-    // 3. Fetch Server Status to update DB connection badge
-    const badge = document.getElementById('db-status-badge');
-    const text = document.getElementById('db-status-text');
-    if (badge && text) {
-      fetch('/api/status')
-        .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-        .then(data => {
-          if (data.databaseConnected) {
-            badge.className = 'db-status';
-            text.textContent = 'MongoDB Online';
-          } else if (data.useMockFallback) {
-            badge.className = 'db-status offline';
-            text.textContent = 'Mock DB Mode';
-          }
-        })
-        .catch(() => {
-          badge.className = 'db-status offline';
-          text.textContent = 'API Error';
-        });
-    }
   }
 });
