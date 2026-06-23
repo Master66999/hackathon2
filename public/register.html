@@ -8,294 +8,264 @@
   <meta name="description"
     content="Register your hackathon team for ClubPulse events and receive your digital QR ticket instantly.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .member-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
+    /* Premium Page Background & Floating Orbs */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .bg-canvas::before {
+      content: '';
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+      top: -150px;
+      left: -150px;
+      z-index: -1;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: floatOrb 20s ease-in-out infinite alternate;
+    }
+    .bg-canvas::after {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.04) 0%, transparent 70%);
+      bottom: -100px;
+      right: -100px;
+      z-index: -1;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: floatOrb2 18s ease-in-out infinite alternate;
+    }
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(80px, 80px) scale(1.1); }
+    }
+    @keyframes floatOrb2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-60px, -60px) scale(1.15); }
     }
 
-    .member-row .remove-btn {
-      background: rgba(244, 63, 94, 0.08);
-      border: 1px solid rgba(244, 63, 94, 0.2);
+    /* Particle Dots */
+    .particles {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      animation: drift linear infinite;
+    }
+    @keyframes drift {
+      0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) translateX(var(--dx, 20px)); opacity: 0; }
+    }
+
+    /* Premium Sticky Header Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 60px;
+      background: rgba(248, 250, 252, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+      transition: all var(--transition-fast);
+    }
+    .nav-brand {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--violet), var(--mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: opacity var(--transition-fast);
+    }
+    .nav-brand:hover {
+      opacity: 0.85;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-link-item {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: color var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-link-item:hover {
+      color: var(--violet);
+    }
+    .btn-nav-primary {
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--violet), var(--mint));
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      transition: all var(--transition-fast);
+    }
+    .btn-nav-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Redesigned Glassmorphic Form Card */
+    #form-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+      transition: all var(--transition-normal);
+    }
+    #form-card:hover {
+      background: rgba(255, 255, 255, 0.78);
+      border-color: var(--border-glow-hover);
+      box-shadow: 0 30px 60px rgba(16, 185, 129, 0.06);
+    }
+
+    /* Premium Input Styling */
+    .premium-input {
+      background: rgba(15, 23, 42, 0.015);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: 12px;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.005);
+    }
+    .premium-input:focus {
+      background: #ffffff;
+      border-color: var(--mint);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.005);
+    }
+    .premium-input::placeholder {
+      color: var(--text-muted);
+    }
+    .premium-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .premium-form-group {
+      margin-bottom: 20px;
+    }
+
+    /* Dynamic Member Card Styling */
+    .member-card {
+      background: rgba(16, 185, 129, 0.015);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      position: relative;
+      animation: slideIn 0.3s ease-out;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .member-card-header {
+      grid-column: span 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .member-card-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--violet);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .member-card .remove-btn {
+      background: rgba(220, 38, 38, 0.05);
+      border: 1px solid rgba(220, 38, 38, 0.15);
       color: var(--rose);
       border-radius: 8px;
-      width: 38px;
-      height: 38px;
+      width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all var(--transition-fast);
-    }
-
-    .member-row .remove-btn:hover {
-      background: rgba(244, 63, 94, 0.15);
-      border-color: var(--rose);
-    }
-
-    .success-banner {
-      display: none;
-      text-align: center;
-      padding: 30px;
-      background: rgba(0, 255, 204, 0.04);
-      border: 1px solid var(--mint-glow);
-      border-radius: 16px;
-      margin-top: 20px;
-      backdrop-filter: blur(16px);
-    }
-
-    .success-banner.active {
-      display: block;
-      animation: fadeIn 0.4s ease;
-    }
-
-    .step-divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 24px 0 16px;
       font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 1px;
+    }
+    .member-card .remove-btn:hover {
+      background: rgba(220, 38, 38, 0.12);
+      border-color: var(--rose);
+      transform: scale(1.05);
     }
 
-    .step-divider::before,
-    .step-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border-color);
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* ID Card Preview Styles */
-    .passes-section {
-      margin-top: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 24px;
-    }
-
-    .passes-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-      margin-top: 20px;
-      justify-content: center;
-    }
-
-    .pass-card-wrapper {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: transform var(--transition-fast), border-color var(--transition-fast);
-    }
-
-    .pass-card-wrapper:hover {
-      transform: translateY(-4px);
-      border-color: var(--violet-glow);
-      box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
-    }
-
-    .pass-card {
-      width: 240px;
-      height: 320px;
-      /* 3:4 aspect ratio */
-      position: relative;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgb(0, 0, 0), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-      overflow: hidden;
-      margin-bottom: 12px;
-      container-type: size;
-    }
-
-    .pass-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .pass-text {
-      position: absolute;
-      left: 62.5%;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      color: #ffffff;
-      font-size: 7px;
-      font-size: 2.92cqw;
-      text-transform: uppercase;
-      letter-spacing: 0.2px;
-      transform: translateY(-50%);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 32%;
-      text-align: left;
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    .pass-val-name {
-      top: 35.9%;
-    }
-
-    .pass-val-team {
-      top: 45.1%;
-      color: #00ffcc;
-    }
-
-    .pass-val-teamid {
-      top: 53.5%;
-      font-family: monospace;
-      font-size: 6.5px;
-      font-size: 2.71cqw;
-      color: #a855f7;
-    }
-
-    .pass-val-partid {
-      top: 63%;
-      font-family: monospace;
-      font-size: 6.5px;
-      font-size: 2.71cqw;
-      color: #fbbf24;
-    }
-
-    .pass-val-college {
-      top: 72.5%;
-      color: #cbd5e0;
-    }
-
-    .pass-event {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      top: 80.5%;
-      transform: translateY(-50%);
-      font-size: 9px;
-      font-size: 3.75cqw;
-      font-weight: 800;
-      color: #00ffcc;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    .pass-qr {
-      position: absolute;
-      left: 19.14%;
-      top: 41.31%;
-      width: 28.13%;
-      height: 21.09%;
-      background: #ffffff;
-      padding: 2px;
-      border-radius: 4px;
-      box-sizing: border-box;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-      z-index: 2;
-    }
-
-    .pass-qr img {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    /* Print Layout styles */
-    @media print {
-      @page {
-        size: A4 portrait;
-        margin: 15mm 10mm 15mm 10mm;
-      }
-
-      body {
-        background: #ffffff !important;
-        color: #000000 !important;
-      }
-
-      body>*:not(#print-area) {
-        display: none !important;
-      }
-
-      #print-area {
-        display: block !important;
-        position: static !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      .print-page {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 25px !important;
-        justify-content: center !important;
-        align-content: flex-start !important;
-        padding: 0 !important;
-      }
-
-      .print-page .pass-card {
-        width: 8.5cm !important;
-        height: 11.33cm !important;
-        box-shadow: none !important;
-        border: 1px solid #e2e8f0 !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        margin-bottom: 0 !important;
-      }
-    }
-
-    /* Wizard Steps Progress styling */
+    /* Wizard Steps Progress Styling */
     .steps-progress-container {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 35px;
+      margin-bottom: 40px;
       position: relative;
+      background: rgba(15, 23, 42, 0.01);
+      padding: 12px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--border-color);
     }
-
     .step-indicator {
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 6px;
       z-index: 2;
       position: relative;
       cursor: pointer;
+      flex: 1;
     }
-
     .step-num {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      background: rgba(15, 23, 42, 0.04);
+      background: #ffffff;
       border: 2px solid var(--border-color);
       color: var(--text-secondary);
       display: flex;
@@ -304,73 +274,60 @@
       font-size: 13px;
       font-weight: 700;
       transition: all var(--transition-fast);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
-
     .step-label {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
       color: var(--text-muted);
-      margin-top: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       transition: all var(--transition-fast);
     }
-
     .step-line {
       flex: 1;
       height: 2px;
       background: var(--border-color);
-      margin: 0 8px;
+      margin: 0 -15px;
       transform: translateY(-13px);
       transition: all var(--transition-fast);
+      z-index: 1;
     }
-
     .step-indicator.active .step-num {
       background: linear-gradient(135deg, var(--violet), var(--mint));
       border-color: transparent;
       color: #ffffff;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+      transform: scale(1.05);
     }
-
     .step-indicator.active .step-label {
       color: var(--violet);
-      font-weight: 700;
+      font-weight: 800;
     }
-
     .step-indicator.completed .step-num {
-      background: var(--mint-glow);
+      background: rgba(16, 185, 129, 0.1);
       border-color: var(--mint);
       color: var(--mint);
     }
-
     .step-indicator.completed .step-label {
       color: var(--mint);
     }
-
     .step-line.active {
       background: var(--mint);
     }
 
-    /* Step Pane display styling */
+    /* Form step pane display */
     .form-step-pane {
       display: none;
       animation: slideIn 0.3s ease-out;
     }
-
     .form-step-pane.active {
       display: block;
     }
 
     @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Navigation buttons layout */
@@ -383,89 +340,319 @@
       padding-top: 20px;
     }
 
-    /* Summary display in Step 4 */
+    /* Summary Card Styling */
     .summary-card {
-      background: rgba(16, 185, 129, 0.02);
+      background: rgba(16, 185, 129, 0.015);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 18px;
+      border-radius: 16px;
+      padding: 20px;
       margin-bottom: 20px;
     }
-
     .summary-item {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(16, 185, 129, 0.05);
+      padding: 10px 0;
+      border-bottom: 1px dashed rgba(16, 185, 129, 0.05);
       font-size: 13px;
     }
-
     .summary-item:last-child {
       border-bottom: none;
     }
-
     .summary-label {
       color: var(--text-secondary);
       font-weight: 600;
     }
-
     .summary-val {
       color: var(--text-primary);
       font-weight: 700;
       text-align: right;
     }
 
-    @media (max-width: 600px) {
-      .member-row {
-        grid-template-columns: 1fr !important;
-        gap: 8px;
-        position: relative;
-        border: 1px dashed var(--border-color);
-        padding: 12px;
-        border-radius: 12px;
-        background: rgba(15, 23, 42, 0.01);
+    /* Success Result Styling */
+    .success-banner {
+      display: none;
+      text-align: center;
+      padding: 40px 30px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--mint);
+      border-radius: 24px;
+      margin-top: 20px;
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      box-shadow: 0 20px 50px rgba(16, 185, 129, 0.06);
+    }
+    .success-banner.active {
+      display: block;
+      animation: slideIn 0.4s ease;
+    }
+
+    .passes-section {
+      margin-top: 24px;
+      border-top: 1px solid rgba(16, 185, 129, 0.1);
+      padding-top: 24px;
+    }
+    .passes-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    .pass-card-wrapper {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .pass-card-wrapper:hover {
+      transform: translateY(-4px);
+      border-color: var(--violet-glow);
+      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.1);
+    }
+    .pass-card {
+      width: 240px;
+      height: 320px;
+      position: relative;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-bottom: 12px;
+      container-type: size;
+    }
+    .pass-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .pass-text {
+      position: absolute;
+      left: 62.5%;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 2.92cqw;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 32%;
+      text-align: left;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .pass-val-name { top: 35.9%; }
+    .pass-val-team { top: 45.1%; color: #00ffcc; }
+    .pass-val-teamid {
+      top: 53.5%;
+      font-family: monospace;
+      font-size: 2.71cqw;
+      color: #a855f7;
+    }
+    .pass-val-partid {
+      top: 63%;
+      font-family: monospace;
+      font-size: 2.71cqw;
+      color: #fbbf24;
+    }
+    .pass-val-college { top: 72.5%; color: #cbd5e0; }
+    .pass-event {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      top: 80.5%;
+      transform: translateY(-50%);
+      font-size: 3.75cqw;
+      font-weight: 800;
+      color: #00ffcc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .pass-qr {
+      position: absolute;
+      left: 19.14%;
+      top: 41.31%;
+      width: 28.13%;
+      height: 21.09%;
+      background: #ffffff;
+      padding: 2px;
+      border-radius: 4px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      z-index: 2;
+    }
+    .pass-qr img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Premium Footer Design */
+    footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 40px 32px 30px;
+      border-top: 1px solid var(--border-color);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 80px;
+      background: rgba(248, 250, 252, 0.6);
+      backdrop-filter: blur(16px);
+      width: 100%;
+    }
+    .footer-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer-links a {
+      color: var(--text-secondary);
+      font-weight: 600;
+      transition: color var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .footer-links a:hover {
+      color: var(--violet);
+    }
+
+    /* Print styles */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 15mm 10mm 15mm 10mm;
       }
-      .member-row .remove-btn {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 32px;
-        height: 32px;
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
       }
-      .member-row input.form-control {
-        padding-right: 44px; /* spacing for absolute remove button */
+      body>*:not(#print-area) {
+        display: none !important;
+      }
+      #print-area {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .print-page {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 25px !important;
+        justify-content: center !important;
+        align-content: flex-start !important;
+        padding: 0 !important;
+      }
+      .print-page .pass-card {
+        width: 8.5cm !important;
+        height: 11.33cm !important;
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 0 !important;
+      }
+    }
+
+    /* Responsive configurations */
+    @media (max-width: 768px) {
+      nav {
+        padding: 14px 24px;
+      }
+      .nav-links {
+        gap: 12px;
+      }
+      #form-card {
+        padding: 24px 16px;
+        border-radius: 20px;
       }
       .steps-progress-container {
-        margin-bottom: 24px;
+        padding: 10px;
+        margin-bottom: 30px;
       }
       .step-label {
-        display: none; /* Hide step names to avoid overlap */
+        display: none;
       }
       .step-num {
-        width: 28px;
-        height: 28px;
-        font-size: 11px;
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
       }
       .step-line {
         transform: translateY(-15px);
+      }
+      .member-card {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .member-card-header {
+        grid-column: span 1;
       }
     }
   </style>
 </head>
 
-<body style="background: var(--bg-main);">
-  <div class="public-container">
-    <div class="public-box">
-      <!-- Header -->
-      <div class="public-logo">
-        <i class="fa-solid fa-bolt-lightning" style="margin-right: 8px;"></i> ClubPulse
-      </div>
-      <p style="text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 30px;">
-        Register your hackathon team below. Your confirmation QR ticket will be sent to the leader's email
-        automatically.
-      </p>
+<body>
+  <!-- Floating background particles and orbs -->
+  <div class="bg-canvas"></div>
+  <div class="particles" id="particles"></div>
 
-      <div class="card" id="form-card" style="border-color: var(--border-color);">
+  <!-- Header Navigation -->
+  <nav>
+    <a class="nav-brand" href="landing.html">
+      <i class="fa-solid fa-bolt-lightning"></i> ClubPulse
+    </a>
+    <div class="nav-links">
+      <a href="landing.html" class="nav-link-item"><i class="fa-solid fa-house"></i> Home</a>
+      <a href="marketing.html" class="nav-link-item"><i class="fa-solid fa-bullhorn"></i> Flyer</a>
+      <a href="attend.html" class="nav-link-item"><i class="fa-solid fa-clipboard-user"></i> Check-in</a>
+      <a href="login.html" class="btn-nav-primary"><i class="fa-solid fa-right-to-bracket"></i> Organizers Sign In</a>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="public-container" style="padding-top: 120px; padding-bottom: 40px;">
+    <div class="public-box">
+      <!-- Title section -->
+      <div style="text-align: center; margin-bottom: 32px;">
+        <span class="badge" style="background: rgba(16, 185, 129, 0.06); color: var(--violet); border: 1px solid rgba(16, 185, 129, 0.15); padding: 6px 16px; font-weight: 700; border-radius: 100px; text-transform: uppercase; letter-spacing: 1.2px; font-size: 11px; margin-bottom: 16px; display: inline-block;">
+          <i class="fa-solid fa-sparkles"></i> Public Registration Portal
+        </span>
+        <h2 style="font-size: clamp(24px, 4vw, 36px); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; background: linear-gradient(135deg, var(--text-primary), var(--text-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          Team Registration Portal
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 14px; max-width: 480px; margin: 0 auto; line-height: 1.6;">
+          Register your hackathon team for events. Individual confirmation QR tickets will be generated and emailed instantly.
+        </p>
+      </div>
+
+      <!-- Form Wizard Card -->
+      <div class="card" id="form-card">
         <!-- Wizard Progress Bar -->
         <div class="steps-progress-container">
           <div class="step-indicator active" id="step-ind-1" onclick="goToStep(1)">
@@ -492,16 +679,12 @@
         <form id="register-form" onsubmit="submitRegistration(event)">
           <!-- STEP 1: Event Selection -->
           <div class="form-step-pane active" id="step-pane-1">
-            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
-              <i class="fa-solid fa-calendar-days" style="color: var(--mint); margin-right: 8px;"></i> Select Target
-              Event
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 20px;">
+              <i class="fa-solid fa-calendar-days" style="color: var(--mint); margin-right: 8px;"></i> Select Target Event
             </h4>
-            <div class="form-group">
-              <label for="reg-event"
-                style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Choose
-                Hackathon or Competition Event</label>
-              <select id="reg-event" class="form-control" required
-                style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+            <div class="premium-form-group">
+              <label for="reg-event" class="premium-label">Choose Hackathon or Competition Event</label>
+              <select id="reg-event" class="premium-input" required>
                 <option value="">Loading available events...</option>
               </select>
             </div>
@@ -516,40 +699,28 @@
 
           <!-- STEP 2: Team Leader Details -->
           <div class="form-step-pane" id="step-pane-2">
-            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 20px;">
               <i class="fa-solid fa-user-tie" style="color: var(--mint); margin-right: 8px;"></i> Team Leader Details
             </h4>
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label for="reg-team-name"
-                style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Team
-                Name</label>
-              <input type="text" id="reg-team-name" class="form-control" placeholder="e.g. CyberNeura" required
-                style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+            <div class="premium-form-group">
+              <label for="reg-team-name" class="premium-label">Team Name</label>
+              <input type="text" id="reg-team-name" class="premium-input" placeholder="e.g. CyberNeura" required>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-              <div class="form-group">
-                <label for="reg-leader-name"
-                  style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Leader
-                  Full Name</label>
-                <input type="text" id="reg-leader-name" class="form-control" placeholder="e.g. Devon Patel" required
-                  style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+              <div class="premium-form-group" style="margin-bottom: 0;">
+                <label for="reg-leader-name" class="premium-label">Leader Full Name</label>
+                <input type="text" id="reg-leader-name" class="premium-input" placeholder="e.g. Devon Patel" required>
               </div>
-              <div class="form-group">
-                <label for="reg-leader-email"
-                  style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Leader
-                  Email</label>
-                <input type="email" id="reg-leader-email" class="form-control" placeholder="dev@email.com" required
-                  style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+              <div class="premium-form-group" style="margin-bottom: 0;">
+                <label for="reg-leader-email" class="premium-label">Leader Email</label>
+                <input type="email" id="reg-leader-email" class="premium-input" placeholder="dev@email.com" required>
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="reg-college"
-                style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">College
-                / University Name</label>
-              <input type="text" id="reg-college" class="form-control" placeholder="e.g. Stanford University" required
-                style="background-color: rgba(15, 23, 42, 0.02); border-color: var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;">
+            <div class="premium-form-group">
+              <label for="reg-college" class="premium-label">College / University Name</label>
+              <input type="text" id="reg-college" class="premium-input" placeholder="e.g. Stanford University" required>
             </div>
 
             <div class="wizard-buttons">
@@ -564,7 +735,7 @@
 
           <!-- STEP 3: Team Members -->
           <div class="form-step-pane" id="step-pane-3">
-            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 20px;">
               <i class="fa-solid fa-users" style="color: var(--mint); margin-right: 8px;"></i> Add Team Members
             </h4>
 
@@ -573,7 +744,7 @@
             </div>
 
             <button type="button" class="btn btn-secondary btn-sm" onclick="addMemberRow()"
-              style="width: 100%; margin-bottom: 20px; border-style: dashed; border-color: var(--border-glow); color: var(--violet);">
+              style="width: 100%; margin-bottom: 20px; border-style: dashed; border-color: var(--border-glow); color: var(--violet); background: rgba(16, 185, 129, 0.02);">
               <i class="fa-solid fa-circle-plus"></i> Add Another Member
             </button>
 
@@ -589,9 +760,8 @@
 
           <!-- STEP 4: Review Summary & Submit -->
           <div class="form-step-pane" id="step-pane-4">
-            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 16px;">
-              <i class="fa-solid fa-clipboard-check" style="color: var(--mint); margin-right: 8px;"></i> Review Your
-              Registration
+            <h4 style="color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 20px;">
+              <i class="fa-solid fa-clipboard-check" style="color: var(--mint); margin-right: 8px;"></i> Review Your Registration
             </h4>
 
             <div class="summary-card">
@@ -623,8 +793,7 @@
             </div>
 
             <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; text-align: center;">
-              🔒 Clicking register will lock details and generate your ticket. Confirmation emails are sent to all
-              members.
+              🔒 Clicking register will lock details and generate your ticket. Confirmation emails are sent to all members.
             </p>
 
             <div class="wizard-buttons">
@@ -648,10 +817,8 @@
         </p>
 
         <div class="passes-section">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-            <div
-              style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); letter-spacing: 1.5px; text-align: left;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); letter-spacing: 1.5px; text-align: left;">
               🎟️ Participant Gate Passes & ID Cards
             </div>
             <button onclick="printAllPasses()" class="btn btn-mint btn-sm"
@@ -665,19 +832,27 @@
           </div>
         </div>
       </div>
-
-      <!-- Quick Back Links -->
-      <div
-        style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted); display: flex; justify-content: center; gap: 12px;">
-        <a href="index.html" style="color: var(--violet); font-weight: 600;">← Dashboard</a>
-        <span style="color: var(--border-glow);">|</span>
-        <a href="marketing.html" style="color: var(--violet); font-weight: 600;"><i class="fa-solid fa-bullhorn"></i>
-          Marketing Flyer</a>
-        <span style="color: var(--border-glow);">|</span>
-        <a href="attend.html" style="color: var(--mint); font-weight: 600;">Self Check-in →</a>
-      </div>
     </div>
   </div>
+
+  <!-- Footer Section -->
+  <footer>
+    <div class="footer-content">
+      <div style="margin-bottom: 8px;">
+        <span style="background: linear-gradient(135deg, var(--mint), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 16px;">ClubPulse</span>
+        &nbsp;·&nbsp; Smart Hackathon Club Platform
+      </div>
+      <div class="footer-links">
+        <a href="landing.html"><i class="fa-solid fa-house"></i> Home</a>
+        <a href="marketing.html"><i class="fa-solid fa-bullhorn"></i> Marketing Flyer</a>
+        <a href="attend.html"><i class="fa-solid fa-circle-check"></i> Self Check-in</a>
+        <a href="login.html"><i class="fa-solid fa-right-to-bracket"></i> Organizer Login</a>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+        &copy; 2026 ClubPulse. Built with ❤️ for organizers and hackers everywhere.
+      </div>
+    </div>
+  </footer>
 
   <!-- Load FontAwesome for icons -->
   <script>
@@ -686,6 +861,7 @@
     link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
     document.head.appendChild(link);
   </script>
+
   <script>
     let currentStep = 1;
 
@@ -815,13 +991,20 @@
       memberCount++;
       const container = document.getElementById('members-container');
       const row = document.createElement('div');
-      row.className = 'member-row';
+      row.className = 'member-row member-card';
       row.id = `member-row-${memberCount}`;
       row.innerHTML = `
-        <input type="text" placeholder="Member Name" class="form-control member-name" value="${defaultName}" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
-        <input type="email" placeholder="Member Email" class="form-control member-email" value="${defaultEmail}" style="background-color: rgba(5,6,8,0.4); border-color: rgba(255,255,255,0.1);">
-        <div class="remove-btn" onclick="removeMemberRow(${memberCount})" title="Remove member">
-          <i class="fa-solid fa-xmark"></i>
+        <div class="member-card-header">
+          <span class="member-card-title"><i class="fa-solid fa-user-plus"></i> Team Member #${memberCount}</span>
+          <div class="remove-btn" onclick="removeMemberRow(${memberCount})" title="Remove member">
+            <i class="fa-solid fa-xmark"></i>
+          </div>
+        </div>
+        <div class="premium-form-group" style="margin-bottom: 0;">
+          <input type="text" placeholder="Member Full Name" class="premium-input member-name" value="${defaultName}">
+        </div>
+        <div class="premium-form-group" style="margin-bottom: 0;">
+          <input type="email" placeholder="member@email.com" class="premium-input member-email" value="${defaultEmail}">
         </div>
       `;
       container.appendChild(row);
@@ -1192,6 +1375,26 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadEvents();
+
+      // Generate floating particles
+      const particleContainer = document.getElementById('particles');
+      if (particleContainer) {
+        for (let i = 0; i < 30; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'particle';
+          dot.style.cssText = `
+            left: ${Math.random() * 100}%;
+            animation-duration: ${10 + Math.random() * 10}s;
+            animation-delay: ${Math.random() * 8}s;
+            --dx: ${(Math.random() - 0.5) * 80}px;
+            background: ${Math.random() > 0.5 ? 'rgba(16,185,129,0.25)' : 'rgba(14,165,233,0.2)'};
+            width: ${1.5 + Math.random() * 2}px;
+            height: ${1.5 + Math.random() * 2}px;
+          `;
+          particleContainer.appendChild(dot);
+        }
+      }
+
       // Pre-add one member row
       addMemberRow();
     });
