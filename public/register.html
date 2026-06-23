@@ -614,6 +614,36 @@
         grid-column: span 1;
       }
     }
+
+    @media (max-width: 600px) {
+      nav {
+        padding: 12px 16px;
+      }
+      .nav-links {
+        gap: 12px;
+      }
+      .nav-text {
+        display: none;
+      }
+      .btn-nav-primary {
+        padding: 8px 12px;
+      }
+      .grid-2-col-mobile {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .wizard-buttons {
+        flex-direction: column-reverse;
+        gap: 10px;
+      }
+      .wizard-buttons button {
+        width: 100%;
+        padding: 12px;
+      }
+    }
   </style>
 </head>
 
@@ -628,10 +658,10 @@
       <i class="fa-solid fa-bolt-lightning"></i> ClubPulse
     </a>
     <div class="nav-links">
-      <a href="landing.html" class="nav-link-item"><i class="fa-solid fa-house"></i> Home</a>
-      <a href="marketing.html" class="nav-link-item"><i class="fa-solid fa-bullhorn"></i> Flyer</a>
-      <a href="attend.html" class="nav-link-item"><i class="fa-solid fa-clipboard-user"></i> Check-in</a>
-      <a href="login.html" class="btn-nav-primary"><i class="fa-solid fa-right-to-bracket"></i> Organizers Sign In</a>
+      <a href="landing.html" class="nav-link-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Home</span></a>
+      <a href="marketing.html" class="nav-link-item"><i class="fa-solid fa-bullhorn"></i> <span class="nav-text">Flyer</span></a>
+      <a href="attend.html" class="nav-link-item"><i class="fa-solid fa-clipboard-user"></i> <span class="nav-text">Check-in</span></a>
+      <a href="login.html" class="btn-nav-primary"><i class="fa-solid fa-right-to-bracket"></i> <span class="nav-text">Organizers Sign In</span></a>
     </div>
   </nav>
 
@@ -707,7 +737,7 @@
               <input type="text" id="reg-team-name" class="premium-input" placeholder="e.g. CyberNeura" required>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div class="grid-2-col-mobile" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
               <div class="premium-form-group" style="margin-bottom: 0;">
                 <label for="reg-leader-name" class="premium-label">Leader Full Name</label>
                 <input type="text" id="reg-leader-name" class="premium-input" placeholder="e.g. Devon Patel" required>
