@@ -202,7 +202,7 @@
 
     function updateStats() {
       const total = allProblems.length;
-      const allocated = allProblems.filter(p => !!p.allocatedToTeam).length;
+      const allocated = allProblems.filter(p => p.allocatedToTeams && p.allocatedToTeams.length > 0).length;
       const unallocated = total - allocated;
 
       document.getElementById('stat-total-probs').textContent = total;
@@ -223,8 +223,10 @@
         filtered.forEach(problem => {
           const color = categoryColors[problem.category] || 'var(--text-secondary)';
           const eventName = problem.eventId ? problem.eventId.title : 'N/A';
-          const teamName = problem.allocatedToTeam ? (problem.allocatedToTeam.name || 'Allocated') : null;
-          const isAllocated = !!problem.allocatedToTeam;
+          const teamNames = problem.allocatedToTeams && problem.allocatedToTeams.length > 0
+            ? problem.allocatedToTeams.map(t => t.name || 'Allocated').join(', ')
+            : null;
+          const isAllocated = problem.allocatedToTeams && problem.allocatedToTeams.length > 0;
 
           grid.innerHTML += `
             <div class="card event-card" id="problem-${problem._id}">
@@ -244,17 +246,18 @@
               </div>
               <div class="event-info-row" style="margin-bottom: 16px;">
                 <i class="fa-solid fa-shield-halved" style="color: ${color};"></i>
-                <span>${teamName ? `Assigned to: <strong>${teamName}</strong>` : 'Not yet assigned to any team'}</span>
+                <span>${teamNames ? `Assigned to: <strong>${teamNames}</strong>` : 'Not yet assigned to any team'}</span>
               </div>
 
               <div class="event-actions">
-                ${!isAllocated
-                  ? `<button class="btn btn-secondary btn-sm" style="flex: 1; border-color: var(--violet-glow); color: var(--violet);" onclick="openAllocateModal('${problem._id}', '${problem.title}')">
-                      <i class="fa-solid fa-link"></i> Assign
+                <button class="btn btn-secondary btn-sm" style="flex: 1; border-color: var(--violet-glow); color: var(--violet);" onclick="openAllocateModal('${problem._id}', '${problem.title}')">
+                  <i class="fa-solid fa-link"></i> Assign
+                </button>
+                ${isAllocated
+                  ? `<button class="btn btn-secondary btn-sm" style="flex: 1; border-color: rgba(244,63,94,0.2); color: var(--rose);" onclick="deallocateProblem('${problem._id}')">
+                      <i class="fa-solid fa-link-slash"></i> Unassign All
                     </button>`
-                  : `<button class="btn btn-secondary btn-sm" style="flex: 1; border-color: rgba(244,63,94,0.2); color: var(--rose);" onclick="deallocateProblem('${problem._id}')">
-                      <i class="fa-solid fa-link-slash"></i> Unassign
-                    </button>`
+                  : ''
                 }
                 <button class="btn btn-secondary btn-sm" onclick="editProblem('${problem._id}')">
                   <i class="fa-solid fa-pen-to-square"></i>
@@ -366,16 +369,24 @@
       document.getElementById('allocate-problem-id').value = problemId;
       document.getElementById('allocate-problem-info').innerHTML = `Assigning: <strong style="color: var(--text-primary);">${problemTitle}</strong>`;
 
+      const problem = allProblems.find(p => p._id === problemId);
+      const allocatedTeamIds = problem && problem.allocatedToTeams 
+        ? problem.allocatedToTeams.map(t => typeof t === 'object' ? t._id.toString() : t.toString()) 
+        : [];
+
       const teamSel = document.getElementById('allocate-team');
       teamSel.innerHTML = '';
-      const unassignedTeams = allTeams.filter(t => !t.problemStatement || t.problemStatement === '');
+      
+      // Filter out teams that already have this problem statement allocated
+      const availableTeams = allTeams.filter(t => !allocatedTeamIds.includes(t._id.toString()));
+      
+      const unassignedTeams = availableTeams.filter(t => !t.problemStatement || t.problemStatement === '');
       if (unassignedTeams.length > 0) {
         unassignedTeams.forEach(t => {
           teamSel.innerHTML += `<option value="${t._id}">${t.name} (Leader: ${t.leaderName})</option>`;
         });
       } else {
-        // Show all if none unassigned
-        allTeams.forEach(t => {
+        availableTeams.forEach(t => {
           teamSel.innerHTML += `<option value="${t._id}">${t.name} (Leader: ${t.leaderName})</option>`;
         });
       }

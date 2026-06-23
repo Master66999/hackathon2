@@ -307,6 +307,49 @@ async function sendWelcomeAndCouponEmails(team, eventName) {
   return { mock: false, sent: sentCount > 0, sentCount, results };
 }
 
+// Helper: Send email to team leader when a topic is allocated
+async function sendTopicAllocationEmail(team, topicTitle, topicDescription) {
+  if (!transporter) {
+    console.log(`[MOCK EMAIL] To: ${team.leaderEmail} (${team.leaderName})`);
+    console.log(`Subject: Topic Allocated: ${topicTitle}`);
+    console.log(`Body: Hi ${team.leaderName}, your team ${team.name} has been allocated the topic: ${topicTitle}.`);
+    return { mock: true, sent: false };
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: team.leaderEmail,
+    subject: `💡 Topic Allocated for Your Team - ${topicTitle}`,
+    html: `
+      <div style="background-color: #0d0e12; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; border-radius: 12px; border: 1px solid #3b3d4a; max-width: 500px; margin: auto;">
+        <h2 style="color: #00ffcc; border-bottom: 2px solid #a855f7; padding-bottom: 10px; margin-top: 0;">Topic Allocated!</h2>
+        <p>Hi <strong>${team.leaderName}</strong> (Team Leader),</p>
+        <p>Your team <strong>${team.name}</strong> has been allocated the following topic/challenge statement:</p>
+        
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 18px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0;">
+          <h3 style="color: #fbbf24; margin-top: 0; margin-bottom: 8px;">${topicTitle}</h3>
+          <p style="color: #cbd5e0; font-size: 14px; margin: 0; line-height: 1.5;">${topicDescription}</p>
+        </div>
+
+        <p style="font-size: 13px; color: #a0aec0;">Best of luck with your hackathon project! Please coordinate with your team members to start working on the challenge.</p>
+        
+        <footer style="margin-top: 30px; border-top: 1px solid #1a1c24; padding-top: 15px; font-size: 11px; color: #718096; text-align: center;">
+          ClubPulse Dashboard - Powered by AI & Smart Operations
+        </footer>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Allocation email sent successfully to ${team.leaderEmail}`);
+    return { mock: false, sent: true };
+  } catch (error) {
+    console.error(`Error sending allocation email to ${team.leaderEmail}:`, error);
+    return { mock: false, sent: false, error: error.message };
+  }
+}
+
 // ==========================================
 // AUTH MIDDLEWARE
 // ==========================================
@@ -1056,7 +1099,7 @@ app.post('/api/teams/:id/attend', async (req, res) => {
 // 6. Problem Statements
 app.get('/api/problems', authenticateToken, async (req, res) => {
   try {
-    const problems = await db.ProblemStatement.find({ userId: req.userId }).populate('eventId').populate('allocatedToTeam');
+    const problems = await db.ProblemStatement.find({ userId: req.userId }).populate('eventId').populate('allocatedToTeams');
     res.json(problems);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -1071,7 +1114,7 @@ app.post('/api/problems', authenticateToken, async (req, res) => {
 
 app.put('/api/problems/:id', authenticateToken, async (req, res) => {
   try {
-    const updated = await db.ProblemStatement.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('eventId').populate('allocatedToTeam');
+    const updated = await db.ProblemStatement.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('eventId').populate('allocatedToTeams');
     if (!updated) return res.status(404).json({ error: 'Problem statement not found' });
     res.json(updated);
   } catch (error) { res.status(400).json({ error: error.message }); }
@@ -1093,21 +1136,49 @@ app.post('/api/problems/allocate', authenticateToken, async (req, res) => {
     const team = await db.Team.findById(teamId);
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
-    await db.ProblemStatement.findByIdAndUpdate(problemId, { allocatedToTeam: teamId });
+    // Check if team is already allocated to this problem
+    if (!problem.allocatedToTeams) {
+      problem.allocatedToTeams = [];
+    }
+    if (!problem.allocatedToTeams.includes(teamId)) {
+      problem.allocatedToTeams.push(teamId);
+      await problem.save();
+    }
+
     await db.Team.findByIdAndUpdate(teamId, { problemStatement: problem.title });
+
+    // Send allocated topic email to the team leader
+    await sendTopicAllocationEmail(team, problem.title, problem.description);
+
     res.json({ message: 'Problem allocated successfully', problem, team });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/problems/deallocate', authenticateToken, async (req, res) => {
   try {
-    const { problemId } = req.body;
+    const { problemId, teamId } = req.body;
     const problem = await db.ProblemStatement.findById(problemId);
     if (!problem) return res.status(404).json({ error: 'Problem statement not found' });
-    if (problem.allocatedToTeam) {
-      await db.Team.findByIdAndUpdate(problem.allocatedToTeam, { problemStatement: '' });
+
+    if (teamId) {
+      // Clear problemStatement for this specific team
+      await db.Team.findByIdAndUpdate(teamId, { problemStatement: '' });
+      // Remove teamId from problem.allocatedToTeams
+      if (problem.allocatedToTeams) {
+        problem.allocatedToTeams = problem.allocatedToTeams.filter(id => id.toString() !== teamId.toString());
+        await problem.save();
+      }
+    } else {
+      // Deallocate all teams
+      if (problem.allocatedToTeams && problem.allocatedToTeams.length > 0) {
+        for (const tId of problem.allocatedToTeams) {
+          await db.Team.findByIdAndUpdate(tId, { problemStatement: '' });
+        }
+      }
+      problem.allocatedToTeams = [];
+      await problem.save();
     }
-    await db.ProblemStatement.findByIdAndUpdate(problemId, { allocatedToTeam: null });
+
     res.json({ message: 'Problem de-allocated successfully', problem });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -1118,7 +1189,15 @@ app.post('/api/problems/allocate-random', authenticateToken, async (req, res) =>
     if (!eventId) return res.status(400).json({ error: 'eventId is required' });
 
     const uid = req.userId;
-    const unallocatedProblems = await db.ProblemStatement.find({ userId: uid, eventId, allocatedToTeam: null });
+    // For random allocation, look for problems that have no allocated teams
+    const unallocatedProblems = await db.ProblemStatement.find({ 
+      userId: uid, 
+      eventId,
+      $or: [
+        { allocatedToTeams: { $exists: false } },
+        { allocatedToTeams: { $size: 0 } }
+      ]
+    });
     const unallocatedTeams = await db.Team.find({ userId: uid, registeredEvent: eventId, problemStatement: '' });
 
     if (unallocatedProblems.length === 0) return res.status(400).json({ error: 'No unallocated problem statements found.' });
@@ -1127,8 +1206,17 @@ app.post('/api/problems/allocate-random', authenticateToken, async (req, res) =>
     let allocatedCount = 0;
     const limit = Math.min(unallocatedProblems.length, unallocatedTeams.length);
     for (let i = 0; i < limit; i++) {
-      await db.ProblemStatement.findByIdAndUpdate(unallocatedProblems[i]._id, { allocatedToTeam: unallocatedTeams[i]._id });
-      await db.Team.findByIdAndUpdate(unallocatedTeams[i]._id, { problemStatement: unallocatedProblems[i].title });
+      const problem = unallocatedProblems[i];
+      const team = unallocatedTeams[i];
+
+      await db.ProblemStatement.findByIdAndUpdate(problem._id, { 
+        $push: { allocatedToTeams: team._id } 
+      });
+      await db.Team.findByIdAndUpdate(team._id, { problemStatement: problem.title });
+
+      // Send allocated topic email to the team leader
+      await sendTopicAllocationEmail(team, problem.title, problem.description);
+
       allocatedCount++;
     }
     res.json({ message: `Successfully allocated ${allocatedCount} problem statements to teams.` });
@@ -1423,7 +1511,7 @@ app.post('/api/ai/event-report', authenticateToken, async (req, res) => {
     const uid = req.userId;
     const teamsForEvent = await db.Team.find({ userId: uid, registeredEvent: eventId });
     const problemStatements = await db.ProblemStatement.find({ userId: uid, eventId });
-    const allocatedProblems = problemStatements.filter(p => p.allocatedToTeam);
+    const allocatedProblems = problemStatements.filter(p => p.allocatedToTeams && p.allocatedToTeams.length > 0);
     const attendedTeams = teamsForEvent.filter(t =>
       t.attendedEvents && t.attendedEvents.map(id => id.toString()).includes(eventId.toString())
     );

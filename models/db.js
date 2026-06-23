@@ -66,11 +66,13 @@ class MockQuery {
           if (event) item.eventId = { ...event };
         }
       }
-      // Populate Team in ProblemStatement (allocatedToTeam)
-      if (path === 'allocatedToTeam' && item.allocatedToTeam) {
-        if (typeof item.allocatedToTeam === 'string' || item.allocatedToTeam instanceof mongoose.Types.ObjectId) {
-          const team = dbMemory.teams.find(t => t._id.toString() === item.allocatedToTeam.toString());
-          if (team) item.allocatedToTeam = { ...team };
+      // Populate Teams in ProblemStatement (allocatedToTeams)
+      if (path === 'allocatedToTeams' && item.allocatedToTeams) {
+        if (Array.isArray(item.allocatedToTeams)) {
+          item.allocatedToTeams = item.allocatedToTeams.map(tId => {
+            const team = dbMemory.teams.find(t => t._id.toString() === tId.toString());
+            return team ? { ...team } : tId;
+          });
         }
       }
       return item;
