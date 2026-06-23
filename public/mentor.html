@@ -243,6 +243,29 @@
       0%, 80%, 100% { transform: scale(0); }
       40% { transform: scale(1); }
     }
+
+    @media (max-width: 768px) {
+      .chat-messages {
+        padding: 16px !important;
+        gap: 12px !important;
+      }
+      .chat-input-area {
+        padding: 12px 16px !important;
+        gap: 8px !important;
+      }
+      .chat-chips-container {
+        padding: 8px 16px !important;
+        gap: 8px !important;
+      }
+      .message-bubble {
+        max-width: 85% !important;
+        padding: 12px 16px !important;
+        font-size: 13.5px !important;
+      }
+      .chat-layout {
+        height: calc(100vh - var(--header-height) - 40px) !important;
+      }
+    }
   </style>
 </head>
 <body>

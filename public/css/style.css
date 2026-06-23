@@ -1322,4 +1322,179 @@ select.form-control option {
     overflow-x: auto;
     padding-bottom: 8px;
   }
+
+  /* Force stack dashboard grid layout columns */
+  .stats-grid,
+  .events-grid,
+  div[style*="display: grid"],
+  div[style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Avoid two columns span for charts on smaller screens */
+  div[style*="grid-column: span 2"],
+  div[style*="grid-column:span 2"],
+  div[style*="grid-column: span 3"],
+  div[style*="grid-column:span 3"] {
+    grid-column: span 1 !important;
+  }
+
+  /* Make flex-wrap welcome greetings and forms stack nicely */
+  div[style*="display: flex"][style*="justify-content: space-between"],
+  div[style*="display:flex"][style*="justify-content: space-between"],
+  .content-body > div[style*="display: flex"][style*="justify-content: space-between"],
+  .main-content div[style*="display: flex"][style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  /* AI insights stack */
+  .ai-insights-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+  }
+  .ai-insights-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+
+  /* Glass Card responsive padding */
+  .card {
+    padding: 20px;
+  }
+
+  /* QR Passes grid */
+  .passes-container {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
 }
+
+@media (max-width: 480px) {
+  /* Header clean layout */
+  .top-header {
+    padding: 0 12px;
+    height: 65px;
+  }
+  .nav-brand {
+    font-size: 17px !important;
+    margin-right: 8px !important;
+  }
+  .db-status {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  .db-status span#db-status-text {
+    display: none; /* Hide database text to fit on one line, keep indicator dot */
+  }
+  .header-right {
+    gap: 8px;
+  }
+  .menu-toggle {
+    padding: 8px;
+  }
+
+  /* Content body margins */
+  .content-body {
+    padding: 12px;
+  }
+  .card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  /* Public container padding adjustments */
+  .public-container {
+    padding: 16px 8px !important;
+  }
+  .public-box {
+    margin: 12px auto !important;
+  }
+
+  /* Registration step indicators styling */
+  .steps-progress-container {
+    margin-bottom: 24px;
+  }
+  .step-label {
+    display: none; /* Hide step names to avoid overlap */
+  }
+  .step-num {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  .step-line {
+    transform: translateY(-15px);
+  }
+
+  /* Member row dynamic inputs stacking */
+  .member-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+    position: relative;
+    border: 1px dashed var(--border-color);
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.01);
+  }
+  .member-row .remove-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+  }
+  .member-row input.form-control {
+    padding-right: 44px; /* spacing for absolute remove button */
+  }
+  .member-row input.member-email {
+    padding-right: 18px; /* reset right-padding for second input */
+  }
+
+  /* Forms double columns responsive stack */
+  form div[style*="grid-template-columns: 1fr 1fr"],
+  form div[style*="grid-template-columns: 1fr 1fr"],
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Auth / Signup cards scaling */
+  .auth-card {
+    padding: 28px 20px !important;
+    border-radius: 20px;
+  }
+  .auth-wrapper {
+    padding: 12px !important;
+  }
+
+  /* Event pass section controls wrap */
+  .passes-section div[style*="justify-content: space-between"] {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+  .passes-section button {
+    width: 100%;
+  }
+
+  /* Portal bottom back-links */
+  div[style*="justify-content: center; gap: 12px"] {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px !important;
+  }
+  div[style*="justify-content: center; gap: 12px"] span {
+    display: none;
+  }
+
+  /* Adjust scan scanner view */
+  .scanner-viewport {
+    border-radius: 12px;
+  }
+}
+

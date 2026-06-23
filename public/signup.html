@@ -30,7 +30,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 24px 12px;
+      overflow-y: auto;
     }
     body::before {
       content: '';
@@ -85,6 +86,7 @@
       font-weight: 800;
       background: linear-gradient(135deg, var(--violet), var(--mint));
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 28px;
       text-decoration: none;
@@ -96,7 +98,10 @@
     /* Two-col grid for name+club */
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
-    @media (max-width: 480px) { .auth-card { padding: 32px 24px; } }
+    @media (max-width: 480px) {
+      .auth-card { padding: 32px 20px; }
+      .auth-title { font-size: 22px; }
+    }
 
     .form-group { margin-bottom: 18px; }
     .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.5px; }

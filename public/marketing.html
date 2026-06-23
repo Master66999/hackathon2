@@ -467,6 +467,29 @@
       }
     }
 
+    @media (max-width: 768px) {
+      .preview-container {
+        padding: 10px;
+        justify-content: center;
+        overflow-x: hidden;
+        min-height: calc((100vw - 60px) * 1.414);
+      }
+      .poster-wrapper {
+        transform: scale(calc((100vw - 60px) / 700));
+        transform-origin: top center;
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .preview-container {
+        min-height: calc((100vw - 32px) * 1.414);
+      }
+      .poster-wrapper {
+        transform: scale(calc((100vw - 32px) / 700));
+      }
+    }
+
     /* Print Stylesheet Optimization */
     @media print {
       @page {

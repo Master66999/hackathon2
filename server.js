@@ -1026,10 +1026,20 @@ app.post('/api/teams/:id/attend', async (req, res) => {
             engagementScore: (leaderMember.engagementScore || 0) + 20
           });
         }
-        try {
-          welcomeEmailsResult = await sendWelcomeAndCouponEmails(team, event.title);
-        } catch (emailErr) {
-          console.error('Error sending welcome and coupon emails:', emailErr);
+        const currentDate = new Date();
+        const eventDate = new Date(event.date);
+        const isSameDay = currentDate.getFullYear() === eventDate.getFullYear() &&
+                          currentDate.getMonth() === eventDate.getMonth() &&
+                          currentDate.getDate() === eventDate.getDate();
+
+        if (isSameDay) {
+          try {
+            welcomeEmailsResult = await sendWelcomeAndCouponEmails(team, event.title);
+          } catch (emailErr) {
+            console.error('Error sending welcome and coupon emails:', emailErr);
+          }
+        } else {
+          console.log(`[INFO] QR code scanned on a different date (Current: ${currentDate.toDateString()}, Event: ${eventDate.toDateString()}). Coupon email omitted.`);
         }
       }
       res.json({ 

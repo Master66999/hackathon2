@@ -414,6 +414,42 @@
       font-weight: 700;
       text-align: right;
     }
+
+    @media (max-width: 600px) {
+      .member-row {
+        grid-template-columns: 1fr !important;
+        gap: 8px;
+        position: relative;
+        border: 1px dashed var(--border-color);
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.01);
+      }
+      .member-row .remove-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+      }
+      .member-row input.form-control {
+        padding-right: 44px; /* spacing for absolute remove button */
+      }
+      .steps-progress-container {
+        margin-bottom: 24px;
+      }
+      .step-label {
+        display: none; /* Hide step names to avoid overlap */
+      }
+      .step-num {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+      }
+      .step-line {
+        transform: translateY(-15px);
+      }
+    }
   </style>
 </head>
 
