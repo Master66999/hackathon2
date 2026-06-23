@@ -487,7 +487,17 @@ app.delete('/api/members/:id', authenticateToken, async (req, res) => {
 // 3. Events Management (Public route for registration/check-in page)
 app.get('/api/public/events', async (req, res) => {
   try {
-    const events = await db.Event.find({}).sort({ date: 1 });
+    const { email } = req.query;
+    let query = {};
+    if (email && email.trim().length > 0) {
+      const user = await db.User.findOne({ email: email.toLowerCase().trim() });
+      if (user) {
+        query = { userId: user._id };
+      } else {
+        return res.json([]);
+      }
+    }
+    const events = await db.Event.find(query).sort({ date: 1 });
     res.json(events);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -497,9 +507,14 @@ app.get('/api/public/events', async (req, res) => {
 // Route: Generate registration URL QR code dynamically
 app.get('/api/public/register-qr', async (req, res) => {
   try {
+    const { email } = req.query;
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
-    const registerUrl = `${protocol}://${host}/register.html`;
+    let registerUrl = `${protocol}://${host}/register.html`;
+    
+    if (email && email.trim().length > 0) {
+      registerUrl += `?email=${encodeURIComponent(email.toLowerCase().trim())}`;
+    }
     
     // Generate QR code pointing to the registration page URL
     const qrCodeDataUrl = await qrcode.toDataURL(registerUrl, {

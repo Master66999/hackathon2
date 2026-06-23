@@ -1047,7 +1047,22 @@
 
     async function loadEvents() {
       try {
-        const res = await fetch('/api/public/events');
+        const urlParams = new URLSearchParams(window.location.search);
+        let emailParam = urlParams.get('email');
+
+        if (!emailParam && window.AuthHelper) {
+          const loggedInUser = window.AuthHelper.getUser();
+          if (loggedInUser && loggedInUser.email) {
+            emailParam = loggedInUser.email;
+          }
+        }
+
+        let apiUrl = '/api/public/events';
+        if (emailParam) {
+          apiUrl += `?email=${encodeURIComponent(emailParam)}`;
+        }
+
+        const res = await fetch(apiUrl);
         const events = await res.json();
         const sel = document.getElementById('reg-event');
         sel.innerHTML = '<option value="">— Select an Event —</option>';

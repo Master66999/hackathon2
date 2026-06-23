@@ -228,7 +228,15 @@
 
     async function loadEvents() {
       try {
-        const res = await fetch('/api/public/events');
+        const urlParams = new URLSearchParams(window.location.search);
+        const emailParam = urlParams.get('email');
+
+        let apiUrl = '/api/public/events';
+        if (emailParam) {
+          apiUrl += `?email=${encodeURIComponent(emailParam)}`;
+        }
+
+        const res = await fetch(apiUrl);
         allEvents = await res.json();
         const sel = document.getElementById('manual-event');
         sel.innerHTML = '<option value="">— Select an Event —</option>';

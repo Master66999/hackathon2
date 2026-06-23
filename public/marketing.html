@@ -712,7 +712,12 @@
     // Fetch dynamic QR code data from backend
     async function loadQRCode() {
       try {
-        const response = await fetch('/api/public/register-qr');
+        const loggedInUser = window.AuthHelper ? window.AuthHelper.getUser() : null;
+        let apiUrl = '/api/public/register-qr';
+        if (loggedInUser && loggedInUser.email) {
+          apiUrl += `?email=${encodeURIComponent(loggedInUser.email)}`;
+        }
+        const response = await fetch(apiUrl);
         if (!response.ok) throw new Error('API request failed');
 
         const data = await response.json();
