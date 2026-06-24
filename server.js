@@ -22,6 +22,11 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Redirect root to landing.html
+app.get('/', (req, res) => {
+  res.redirect('/landing.html');
+});
+
 // Serve static files from 'public' if it exists
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));

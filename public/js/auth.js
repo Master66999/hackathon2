@@ -51,7 +51,10 @@ const AuthHelper = {
   /** Redirect to login if not authenticated */
   guardPage() {
     const path = window.location.pathname;
-    const page = path.substring(path.lastIndexOf('/') + 1) || 'landing.html';
+    let page = path.substring(path.lastIndexOf('/') + 1);
+    if (!page || page === '') {
+      page = 'index.html';
+    }
     if (PUBLIC_PAGES.includes(page)) return; // public page, skip
 
     const token = this.getToken();

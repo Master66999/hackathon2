@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClubPulse - Events Management</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -171,17 +172,93 @@
   <script>
     let allEvents = [];
     let currentFilter = 'all';
+    let isAutomatingStatus = false;
 
     async function loadEvents() {
       try {
         const res = await fetch('/api/events');
         allEvents = await res.json();
+
+        if (!isAutomatingStatus) {
+          isAutomatingStatus = true;
+          await checkAndAutomateEventStatus();
+          isAutomatingStatus = false;
+        }
+
         renderEvents();
         if (currentView === 'calendar') {
           renderCalendar();
         }
       } catch (err) {
         console.error('Error loading events:', err);
+      }
+    }
+
+    async function checkAndAutomateEventStatus() {
+      let updatedAny = false;
+      const now = Date.now();
+
+      for (const event of allEvents) {
+        const startTime = new Date(event.date).getTime();
+        // Competition: 24h, other types (Workshop, Meeting, Social): 2h
+        const durationMs = event.type === 'Competition' ? 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
+        const endTime = startTime + durationMs;
+        
+        let newStatus = null;
+        let shouldEmailCerts = false;
+
+        if (now >= startTime && now < endTime && event.status === 'upcoming') {
+          newStatus = 'ongoing';
+        } else if (now >= endTime && event.status !== 'completed') {
+          newStatus = 'completed';
+          shouldEmailCerts = true;
+        }
+
+        if (newStatus) {
+          console.log(`[AUTOMATION] Event "${event.title}" transitioning status from "${event.status}" to "${newStatus}"`);
+          
+          const payload = {
+            title: event.title,
+            description: event.description,
+            date: event.date,
+            location: event.location,
+            venue: event.venue || '',
+            type: event.type,
+            status: newStatus,
+            maxCapacity: event.maxCapacity || 100,
+            organizer: event.organizer
+          };
+
+          try {
+            const res = await fetch(`/api/events/${event._id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+              updatedAny = true;
+              event.status = newStatus;
+              if (shouldEmailCerts) {
+                try {
+                  console.log(`[AUTOMATION] Event completed! Triggering auto-certificates for: ${event.title}`);
+                  await triggerCertificateGenerationAndEmail(event._id, event.title);
+                } catch (certErr) {
+                  console.error(`[AUTOMATION] Error emailing certificates for "${event.title}":`, certErr);
+                }
+              }
+            } else {
+              console.error(`[AUTOMATION] Failed to update status to "${newStatus}" for event "${event.title}"`);
+            }
+          } catch (err) {
+            console.error(`[AUTOMATION] Network error updating event status for "${event.title}":`, err);
+          }
+        }
+      }
+
+      if (updatedAny) {
+        const res = await fetch('/api/events');
+        allEvents = await res.json();
       }
     }
 
@@ -229,6 +306,9 @@
                 </button>
                 <button class="btn btn-secondary btn-sm btn-dl-report" id="btn-dl-${event._id}" onclick="downloadEventReport('${event._id}', '${event.title.replace(/'/g, "\\'")}')" title="Download Report" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.15); color: var(--mint); transition: all 0.2s;">
                   <i class="fa-solid fa-file-arrow-down"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm btn-dl-pdf" id="btn-pdf-${event._id}" onclick="downloadEventPDF('${event._id}', '${event.title.replace(/'/g, "\\'")}')" title="Generate Evaluation PDF" style="background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.15); color: var(--violet); transition: all 0.2s;">
+                  <i class="fa-solid fa-file-pdf"></i>
                 </button>
                 <button class="btn btn-secondary btn-sm" onclick="editEvent('${event._id}')">
                   <i class="fa-solid fa-pen-to-square"></i>
@@ -738,7 +818,6 @@
         progressText.innerText = 'Loading certificate template...';
         progressBar.style.width = '20%';
         const img = new Image();
-        img.crossOrigin = 'anonymous';
         
         await new Promise((resolve, reject) => {
           img.onload = resolve;
@@ -785,23 +864,37 @@
           }
         }
 
-        // 4. Email certificates
-        progressText.innerText = 'Emailing certificates to participants...';
-        progressBar.style.width = '90%';
+        // 4. Email certificates sequentially to prevent payload size and timeout errors
+        progressText.innerText = 'Emailing certificates...';
+        let sentCount = 0;
+        for (let i = 0; i < certificates.length; i++) {
+          const cert = certificates[i];
+          progressText.innerText = `Emailing certificate ${i + 1} of ${certificates.length} to ${cert.name}...`;
 
-        const emailRes = await fetch(`/api/events/${eventId}/email-certificates`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ certificates })
-        });
-        const emailData = await emailRes.json();
+          const emailRes = await fetch(`/api/events/${eventId}/email-certificates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ certificates: [cert] })
+          });
+          const emailData = await emailRes.json();
+
+          if (!emailRes.ok) {
+            throw new Error(emailData.error || `Failed to send certificate to ${cert.name}`);
+          }
+
+          sentCount += emailData.sentCount || 1;
+
+          // Scale progress bar from 80% to 100% based on emailing progress
+          const emailProgress = Math.round(((i + 1) / certificates.length) * 20);
+          progressBar.style.width = `${80 + emailProgress}%`;
+        }
 
         progressBar.style.width = '100%';
         progressText.innerText = 'All certificates sent successfully!';
         
         setTimeout(() => {
           overlay.remove();
-          alert(`Success! Successfully generated and emailed ${emailData.sentCount || certificates.length} certificates for ${eventTitle}.`);
+          alert(`Success! Successfully generated and emailed ${sentCount} certificates for ${eventTitle}.`);
         }, 1000);
 
       } catch (err) {
@@ -843,6 +936,275 @@
         alert(err.message || 'Error downloading event details report.');
         
         // Error State
+        btn.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: var(--rose);"></i>';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }, 1500);
+      }
+    }
+
+    async function downloadEventPDF(eventId, eventTitle) {
+      const btn = document.getElementById(`btn-pdf-${eventId}`);
+      if (!btn) return;
+
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+      try {
+        const res = await fetch('/api/teams');
+        const allTeams = await res.json();
+        
+        if (!res.ok) throw new Error(allTeams.error || 'Failed to fetch teams');
+
+        const eventTeams = allTeams.filter(t => {
+          const registeredId = t.registeredEvent?._id || t.registeredEvent;
+          return registeredId && registeredId.toString() === eventId.toString();
+        });
+
+        if (eventTeams.length === 0) {
+          alert('No teams registered for this event. PDF cannot be generated.');
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        eventTeams.forEach((team, index) => {
+          if (index > 0) {
+            doc.addPage();
+          }
+
+          // Draw Header banner
+          doc.setFillColor(15, 23, 42); // #0f172a
+          doc.rect(15, 15, 180, 20, 'F');
+          
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(13);
+          doc.setTextColor(0, 255, 204); // Mint
+          doc.text("CLUBPULSE EVALUATION SCORECARD", 20, 23);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(10);
+          doc.setTextColor(255, 255, 255);
+          doc.text(`Event: ${eventTitle}`, 20, 29);
+          
+          // Divider
+          doc.setDrawColor(226, 232, 240); // slate-200
+          doc.setLineWidth(0.5);
+          doc.line(15, 42, 195, 42);
+
+          // Vertical Separator
+          doc.setDrawColor(226, 232, 240);
+          doc.setLineWidth(0.3);
+          doc.line(110, 48, 110, 255);
+
+          // ================= LEFT COLUMN =================
+          const startXLeft = 15;
+          
+          // --- ROUND 1 EVALUATION ---
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(15, 23, 42);
+          doc.text("ROUND 1 EVALUATION", startXLeft, 52);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(71, 85, 105); // slate-600
+          
+          const round1Criteria = [
+            "Innovation & Ideation (0 - 10)",
+            "Technical Execution (0 - 10)",
+            "Design & UX (0 - 10)",
+            "Presentation & Q&A (0 - 10)"
+          ];
+          
+          let yOffset = 60;
+          round1Criteria.forEach(crit => {
+            doc.text(`[   ]  ${crit}`, startXLeft, yOffset);
+            yOffset += 7;
+          });
+          
+          // Total Score
+          doc.setFont("Helvetica", "bold");
+          doc.setTextColor(15, 23, 42);
+          doc.text("Total Round 1 Score:  [     / 40 ]", startXLeft, yOffset + 2);
+          
+          // Comments box
+          doc.setFont("Helvetica", "italic");
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184); // slate-400
+          doc.text("Round 1 Judge Comments & Notes:", startXLeft, yOffset + 11);
+          
+          doc.setDrawColor(203, 213, 225); // slate-300
+          doc.setLineDashPattern([1, 1], 0); // dotted border
+          doc.rect(startXLeft, yOffset + 14, 85, 18);
+          doc.setLineDashPattern([], 0); // reset line dash
+
+          // --- ROUND 2 EVALUATION ---
+          const startYRound2 = 135;
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(15, 23, 42);
+          doc.text("ROUND 2 EVALUATION", startXLeft, startYRound2);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(71, 85, 105);
+          
+          const round2Criteria = [
+            "Progress & Code Quality (0 - 10)",
+            "Completeness & Features (0 - 10)",
+            "Business Value / Utility (0 - 10)",
+            "Pitch & Demo Performance (0 - 10)"
+          ];
+          
+          yOffset = startYRound2 + 8;
+          round2Criteria.forEach(crit => {
+            doc.text(`[   ]  ${crit}`, startXLeft, yOffset);
+            yOffset += 7;
+          });
+          
+          // Total Score
+          doc.setFont("Helvetica", "bold");
+          doc.setTextColor(15, 23, 42);
+          doc.text("Total Round 2 Score:  [     / 40 ]", startXLeft, yOffset + 2);
+          
+          // Comments box
+          doc.setFont("Helvetica", "italic");
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text("Round 2 Judge Comments & Notes:", startXLeft, yOffset + 11);
+          
+          doc.setDrawColor(203, 213, 225);
+          doc.setLineDashPattern([1, 1], 0);
+          doc.rect(startXLeft, yOffset + 14, 85, 18);
+          doc.setLineDashPattern([], 0);
+
+          // ================= RIGHT COLUMN =================
+          const startXRight = 115;
+          
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(15, 23, 42);
+          doc.text("TEAM PROFILE", startXRight, 52);
+          
+          // Team Name
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(13);
+          doc.setTextColor(168, 85, 247); // Violet
+          doc.text(team.name.toUpperCase(), startXRight, 60);
+          
+          // College
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(71, 85, 105);
+          doc.text(`College: ${team.college || 'N/A'}`, startXRight, 66);
+          
+          // Problem Statement callout box
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(9);
+          doc.setTextColor(15, 23, 42);
+          doc.text("Problem Statement:", startXRight, 76);
+          
+          // Shaded callout container
+          doc.setFillColor(248, 250, 252); // slate-50
+          doc.setDrawColor(226, 232, 240);
+          doc.rect(startXRight, 80, 80, 28, 'FD');
+          
+          // Problem statement text wrapping
+          doc.setFont("Helvetica", "italic");
+          doc.setFontSize(8);
+          doc.setTextColor(51, 65, 85); // slate-700
+          
+          const problemText = team.problemStatement || "No problem statement allocated yet.";
+          const splitProblem = doc.splitTextToSize(problemText, 76);
+          doc.text(splitProblem, startXRight + 2, 84);
+          
+          // Team Leader
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(9.5);
+          doc.setTextColor(15, 23, 42);
+          doc.text("Team Leader:", startXRight, 116);
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(71, 85, 105);
+          doc.text(`${team.leaderName} (${team.leaderEmail})`, startXRight, 121);
+          
+          // Team Members List
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(9.5);
+          doc.setTextColor(15, 23, 42);
+          doc.text("Additional Members:", startXRight, 131);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(8.5);
+          doc.setTextColor(71, 85, 105);
+          
+          let memberY = 137;
+          if (team.members && team.members.length > 0) {
+            team.members.forEach(member => {
+              doc.text(`• ${member.name} (${member.email})`, startXRight, memberY);
+              memberY += 5.5;
+            });
+          } else {
+            doc.setFont("Helvetica", "italic");
+            doc.text("No additional team members.", startXRight, memberY);
+          }
+
+          // Submissions Section (if submitted)
+          if (team.projectSubmitted) {
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text("Project Submission Links:", startXRight, 180);
+            
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(71, 85, 105);
+            doc.text(`Demo: ${team.projectLiveLink || 'N/A'}`, startXRight, 185);
+            doc.text(`GitHub: ${team.projectGithubLink || 'N/A'}`, startXRight, 190);
+            doc.text(`Slides: ${team.projectPptLink || 'N/A'}`, startXRight, 195);
+          }
+          
+          // --- FOOTER & SIGNATURE ---
+          doc.setDrawColor(203, 213, 225);
+          doc.setLineWidth(0.3);
+          doc.line(startXRight, 245, startXRight + 75, 245);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(100, 116, 139);
+          doc.text("Judge Signature", startXRight + 20, 249);
+
+          // Page number & branding
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text(`Page ${index + 1} of ${eventTeams.length}`, 15, 285);
+          doc.text("Generated by ClubPulse", 160, 285);
+        });
+
+        const cleanTitle = eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save(`evaluation-sheet-${cleanTitle}.pdf`);
+
+        // Success State
+        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--mint);"></i>';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }, 1500);
+
+      } catch (err) {
+        console.error('Error generating PDF:', err);
+        alert(err.message || 'Error generating evaluation PDF.');
         btn.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: var(--rose);"></i>';
         setTimeout(() => {
           btn.disabled = false;
